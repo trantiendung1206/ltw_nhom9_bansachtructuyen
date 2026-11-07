@@ -192,18 +192,59 @@ public class AdminController(AppDbContext db) : Controller
     }
 
     [HttpGet("Orders")]
-    public async Task<IActionResult> Orders(string? status, string? q)
+    public async Task<IActionResult> Orders(string? q)
     {
         var orders = db.Orders.Include(order => order.Items).AsQueryable();
-        if (!string.IsNullOrWhiteSpace(status)) orders = orders.Where(order => order.Status == status);
         if (!string.IsNullOrWhiteSpace(q))
             orders = orders.Where(order => order.Id.ToString() == q || order.ReceiverName.Contains(q) || order.Phone.Contains(q) || order.Items.Any(item => item.BookTitle.Contains(q)));
         ViewBag.Query = q;
         return View(await orders.OrderByDescending(order => order.CreatedAt).ToListAsync());
     }
 
-    [HttpPost("Orders/Status/{id}"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateOrderStatus(int id, string status, string? q) { var order = await db.Orders.FindAsync(id); if (order is not null) { order.Status = status; await db.SaveChangesAsync(); } return RedirectToAction(nameof(Orders), new { q }); }
+    [HttpGet("Orders/{id}")]
+    public async Task<IActionResult> OrderDetails(int id)
+    {
+        var order = await db.Orders.Include(item => item.Items).FirstOrDefaultAsync(item => item.Id == id);
+        if (order is null) return NotFound();
+        ViewBag.History = await db.OrderStatusHistories.Where(item => item.OrderId == id).OrderBy(item => item.OccurredAt).ToListAsync();
+        return View(order);
+    }
+
+    [HttpPost("Orders/{id}/Advance"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> AdvanceOrder(int id)
+    {
+        var order = await db.Orders.FindAsync(id);
+        if (order is null) return NotFound();
+        var next = new Dictionary<string, (string Status, string Action)>
+        {
+            ["Cần xác nhận"] = ("Đã xác nhận đơn hàng", "Đã xác nhận đơn hàng"),
+            ["Đã xác nhận đơn hàng"] = ("Đã đóng gói - chờ vận chuyển", "Đã đóng gói thành công - chờ vận chuyển"),
+            ["Đã đóng gói - chờ vận chuyển"] = ("Đang vận chuyển", "Đang vận chuyển"),
+            ["Đang vận chuyển"] = ("Hoàn tất", "Hoàn tất đơn hàng")
+        };
+        if (next.TryGetValue(order.Status, out var step))
+        {
+            order.Status = step.Status;
+            db.OrderStatusHistories.Add(new OrderStatusHistory { OrderId = id, Action = step.Action });
+            await db.SaveChangesAsync();
+        }
+        return RedirectToAction(nameof(OrderDetails), new { id });
+    }
+
+    [HttpPost("Orders/{id}/Cancel"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> CancelOrder(int id, string reason)
+    {
+        var order = await db.Orders.FindAsync(id);
+        if (order is null) return NotFound();
+        if (order.Status != "Hoàn tất" && !string.IsNullOrWhiteSpace(reason))
+        {
+            order.Status = "Đã hủy";
+            order.CancellationReason = reason;
+            db.OrderStatusHistories.Add(new OrderStatusHistory { OrderId = id, Action = $"Đã hủy đơn hàng: {reason}" });
+            await db.SaveChangesAsync();
+        }
+        return RedirectToAction(nameof(Orders));
+    }
 
     [HttpGet("Returns")]
     public async Task<IActionResult> Returns(string? q)
@@ -216,10 +257,15 @@ public class AdminController(AppDbContext db) : Controller
     }
 
     [HttpPost("Returns/Status/{id}"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateReturnStatus(int id, string status, string? q)
+    public async Task<IActionResult> UpdateReturnStatus(int id, string? q)
     {
         var request = await db.ReturnRequests.FindAsync(id);
-        if (request is not null) { request.Status = status; request.ResolvedAt = status == "Chờ xác nhận" ? null : DateTime.Now; await db.SaveChangesAsync(); }
+        if (request is not null && request.Status == "Chờ xác nhận")
+        {
+            request.Status = "Chấp nhận yêu cầu trả hàng";
+            request.ResolvedAt = DateTime.Now;
+            await db.SaveChangesAsync();
+        }
         return RedirectToAction(nameof(Returns), new { q });
     }
 

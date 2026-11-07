@@ -18,6 +18,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<OrderStatusHistory> OrderStatusHistories => Set<OrderStatusHistory>();
     public DbSet<ReturnRequest> ReturnRequests => Set<ReturnRequest>();
     public DbSet<CustomerFeedback> CustomerFeedbacks => Set<CustomerFeedback>();
 
@@ -28,5 +29,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         builder.Entity<Book>().Property(book => book.DiscountAmount).HasPrecision(18, 2);
         builder.Entity<Order>().Property(order => order.Total).HasPrecision(18, 2);
         builder.Entity<OrderItem>().Property(item => item.UnitPrice).HasPrecision(18, 2);
+        builder.Entity<OrderStatusHistory>().HasOne(item => item.Order).WithMany().HasForeignKey(item => item.OrderId).OnDelete(DeleteBehavior.Cascade);
     }
 }

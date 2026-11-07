@@ -7,9 +7,9 @@
 bán sách online tại Việt Nam:
 
 - Khách hàng xem, tìm kiếm, lọc và mua sách.
-- Khách hàng quản lý giỏ hàng, đơn hàng, đổi trả và góp ý.
+- Khách hàng quản lý giỏ hàng, đơn hàng, trả hàng và góp ý.
 - Nhân viên/quản trị viên quản lý sách, kho, danh mục, khuyến mãi, đơn hàng,
-  đổi trả và góp ý.
+  trả hàng và góp ý.
 - Không hỗ trợ nghiệp vụ nhận hàng tại cửa hàng; mọi đơn hàng đều giao tận nơi.
 
 ## 2. Công nghệ và cấu trúc chính
@@ -66,7 +66,7 @@ Script tạo database `LatTrangBookStore`. Khi ứng dụng khởi động,
 `DbInitializer` tiếp tục:
 
 1. Tạo bảng Identity.
-2. Tạo bảng sách, danh mục, đơn hàng, chi tiết đơn hàng, đổi trả
+2. Tạo bảng sách, danh mục, đơn hàng, chi tiết đơn hàng, trả hàng
    và góp ý.
 3. Bổ sung các cột schema còn thiếu nếu database đã tồn tại từ phiên bản cũ.
 4. Chuẩn hóa trạng thái đơn hàng và hình thức giao hàng.
@@ -215,13 +215,12 @@ Người dùng nhập:
 Hệ thống tính:
 
 - Tạm tính theo giá sau khuyến mãi.
-- Phí giao hàng 30.000 đồng nếu tạm tính dưới 250.000 đồng.
-- Miễn phí giao hàng từ 250.000 đồng.
+- Không cộng phí vận chuyển; tổng tiền chỉ tính tiền sách.
 
 Nút **Đặt hàng**:
 
 1. Kiểm tra giỏ hàng và tồn kho.
-2. Tạo đơn hàng trạng thái `Đang xử lý`.
+2. Tạo đơn hàng trạng thái `Cần xác nhận`.
 3. Tạo các dòng chi tiết đơn hàng.
 4. Trừ tồn kho trong transaction.
 5. Xóa giỏ hàng sau khi lưu thành công.
@@ -239,28 +238,23 @@ Khách hàng xem:
 - Tổng tiền.
 - Tên, số điện thoại, địa chỉ nhận.
 - Trạng thái đơn.
-- Lịch sử các yêu cầu đổi trả.
+- Lịch sử các yêu cầu trả hàng.
 
 Trạng thái đơn:
 
-1. `Đang xử lý`
-2. `Đã đóng gói - chờ vận chuyển`
-3. `Đang vận chuyển`
-4. `Hoàn tất`
-5. `Đã hủy`
+1. `Cần xác nhận`
+2. `Đã xác nhận đơn hàng`
+3. `Đã đóng gói - chờ vận chuyển`
+4. `Đang vận chuyển`
+5. `Hoàn tất`
+6. `Đã hủy`
 
-### 5.8. Đổi trả
+### 5.8. Trả hàng
 
-Đổi trả thực hiện từ đơn hàng đã mua, bằng nút **Yêu cầu đổi trả**.
-
-Khách nhập:
-
-- Lý do.
-- Loại yêu cầu: đổi hàng hoặc hoàn tiền.
-
-Nút **Gửi yêu cầu** tạo yêu cầu trạng thái `Chờ xác nhận`. Quản lý xem thông
-tin liên hệ và quyết định xác nhận hoặc từ chối. Quy trình vận chuyển thực tế
-do nhân viên xử lý bên ngoài phạm vi website.
+Khách mở **Chi tiết đơn hàng** và chỉ thấy nút **Yêu cầu trả hàng** với đơn
+`Hoàn tất` trong vòng 7 ngày. Chỉ hỗ trợ hoàn tiền. Khách nhập lý do và gửi
+yêu cầu `Chờ xác nhận`; nhân viên xác nhận để chuyển thành
+`Chấp nhận yêu cầu trả hàng`.
 
 ### 5.9. Góp ý
 
@@ -344,26 +338,23 @@ mục để mở danh sách sách.
 Đường dẫn: `/Admin/Orders`
 
 - Tìm kiếm theo mã đơn, tên người nhận, số điện thoại hoặc tên sách.
-- Có thể lọc theo trạng thái.
 - Mã đơn hiển thị dạng `#00000001`.
-- Dropdown trạng thái cho từng đơn.
-- **Xác nhận lưu**: ghi trạng thái mới vào database.
+- Mỗi dòng hiển thị mã đơn, ngày đặt, khách hàng/số điện thoại, tổng tiền và
+  trạng thái chỉ đọc.
+- **Chi tiết đơn hàng** mở thông tin khách, sản phẩm, địa chỉ và lịch trình.
+- Các nút xử lý theo đúng thứ tự: xác nhận đơn, đóng gói, đang vận chuyển,
+  hoàn tất; không thể chuyển ngược trạng thái.
+- Nút hủy yêu cầu nhập lý do và chỉ hoạt động trước khi đơn hoàn tất.
 
-Việc cập nhật trạng thái của Admin làm thay đổi trạng thái mà khách hàng nhìn
-thấy trong `/Orders`.
-
-### 6.6. Quản lý đổi trả
+### 6.6. Quản lý trả hàng
 
 Đường dẫn: `/Admin/Returns`
 
 - Tìm kiếm theo mã yêu cầu, mã đơn, tên khách, số điện thoại hoặc email.
 - Mã yêu cầu và mã đơn hiển thị dạng dễ đọc.
-- Xem lý do, loại yêu cầu, thời gian và trạng thái.
+- Xem lý do, thời gian và trạng thái yêu cầu hoàn tiền.
 - Xem trực tiếp email và số điện thoại khách để liên hệ.
-- **Xác nhận lưu**: cập nhật trạng thái:
-  - Chờ xác nhận.
-  - Đã xác nhận.
-  - Từ chối.
+- **Xác nhận**: chuyển `Chờ xác nhận` thành `Chấp nhận yêu cầu trả hàng`.
 - Khi trạng thái không còn là `Chờ xác nhận`, hệ thống lưu thời gian xử lý.
 
 ### 6.7. Quản lý góp ý
@@ -402,15 +393,16 @@ Xem sách
   → Khách theo dõi đơn
 ```
 
-### Quy trình đổi trả
+### Quy trình trả hàng
 
 ```text
-Đơn đã mua
-  → Yêu cầu đổi trả
-  → Nhập lý do và loại yêu cầu
+Đơn hoàn tất trong 7 ngày
+  → Chi tiết đơn hàng
+  → Yêu cầu trả hàng
+  → Nhập lý do hoàn tiền
   → Chờ xác nhận
   → Admin xem thông tin liên hệ
-  → Xác nhận hoặc từ chối
+  → Chấp nhận yêu cầu trả hàng
   → Khách xem kết quả trong lịch sử đơn
 ```
 

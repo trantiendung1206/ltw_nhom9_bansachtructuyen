@@ -1,4 +1,4 @@
 @model ReturnRequest
-@{ ViewData["Title"] = "Yêu cầu đổi trả"; }
-<div class="container page-heading"><span class="eyebrow">HỖ TRỢ ĐƠN HÀNG</span><h1>Yêu cầu đổi trả</h1><p>Đơn hàng #LP@Model.OrderId.ToString("D5") · Yêu cầu sẽ chờ quản lý xác nhận.</p></div>
-<div class="container support-form-wrap"><form asp-action="Return" method="post" class="checkout-form"><input type="hidden" asp-for="OrderId" /><label>Loại yêu cầu<select asp-for="RequestType"><option>Đổi hàng</option><option>Hoàn tiền</option></select></label><label>Lý do<textarea asp-for="Reason" rows="6" required placeholder="Mô tả lý do đổi trả..."></textarea></label><span asp-validation-for="Reason" class="text-danger"></span><button class="btn btn-orange mt-3">Gửi yêu cầu</button></form></div>
+@{ ViewData["Title"] = "Yêu cầu trả hàng"; }
+<div class="container page-heading"><span class="eyebrow">HỖ TRỢ ĐƠN HÀNG</span><h1>Yêu cầu trả hàng</h1><p>Đơn hàng #@Model.OrderId.ToString("D8") · Chỉ hỗ trợ hoàn tiền trong vòng 7 ngày.</p></div>
+<div class="container support-form-wrap"><form asp-action="Return" method="post" class="checkout-form"><input type="hidden" asp-for="OrderId" /><p><b>Hình thức:</b> Hoàn tiền</p><label>Lý do<textarea asp-for="Reason" rows="6" required placeholder="Nhập lý do trả hàng..."></textarea></label><span asp-validation-for="Reason" class="text-danger"></span><button class="btn btn-orange mt-3">Gửi yêu cầu trả hàng</button></form></div>

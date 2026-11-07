@@ -21,4 +21,12 @@ public class OrdersController(AppDbContext db) : Controller
         ViewBag.ReturnRequests = await db.ReturnRequests.AsNoTracking().Where(item => item.UserId == userId).ToListAsync();
         return View(orders);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var order = await db.Orders.Include(item => item.Items).FirstOrDefaultAsync(item => item.Id == id && item.UserId == userId);
+        return order is null ? NotFound() : View(order);
+    }
 }

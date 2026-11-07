@@ -18,8 +18,8 @@
             <a class="@(currentController == "Admin" && currentAction == "Index" ? "active" : "")" asp-controller="Admin" asp-action="Index">▦ <span>Thống kê hệ thống</span></a>
             <a class="@(currentAction == "Books" || currentAction == "CreateBook" || currentAction == "EditBook" ? "active" : "")" asp-controller="Admin" asp-action="Books">▤ <span>Quản lý sách</span></a>
             <a class="@(currentAction == "Categories" || currentAction == "CategoryBooks" ? "active" : "")" asp-controller="Admin" asp-action="Categories">▥ <span>Danh mục sách</span></a>
-            <a class="@(currentAction == "Orders" ? "active" : "")" asp-controller="Admin" asp-action="Orders">▣ <span>Quản lý đơn hàng</span></a>
-            <a class="@(currentAction == "Returns" ? "active" : "")" asp-controller="Admin" asp-action="Returns">↩ <span>Xử lý đổi trả</span></a>
+            <a class="@(currentAction == "Orders" || currentAction == "OrderDetails" ? "active" : "")" asp-controller="Admin" asp-action="Orders">▣ <span>Quản lý đơn hàng</span></a>
+            <a class="@(currentAction == "Returns" ? "active" : "")" asp-controller="Admin" asp-action="Returns">↩ <span>Xử lý trả hàng</span></a>
             <a class="@(currentAction == "Feedback" ? "active" : "")" asp-controller="Admin" asp-action="Feedback">✉ <span>Góp ý khách hàng</span></a>
             <a class="@(currentAction == "Promotions" ? "active" : "")" asp-controller="Admin" asp-action="Promotions">◇ <span>Quản lý ưu đãi</span></a>
         </nav>

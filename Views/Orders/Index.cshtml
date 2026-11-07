@@ -1,6 +1,6 @@
 @model IEnumerable<Order>
 @{ ViewData["Title"] = "Đơn hàng của tôi"; }
-<div class="container page-heading"><span class="eyebrow">TÀI KHOẢN CỦA BẠN</span><h1>Đơn hàng của tôi</h1><p>Theo dõi các đơn sách đã đặt và trạng thái giao hàng.</p></div>
+<div class="container page-heading"><span class="eyebrow">TÀI KHOẢN CỦA BẠN</span><h1>Lịch sử đơn hàng</h1><p>Theo dõi các đơn sách đã đặt và trạng thái giao hàng.</p></div>
 <div class="container orders-page">
     @if (!Model.Any())
     {
@@ -13,14 +13,15 @@
             <section class="customer-order">
                 <div class="customer-order-head"><div><b>Đơn hàng #LP@order.Id.ToString("D5")</b><small>@order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small></div><span class="order-status">@order.Status</span></div>
                 <div class="customer-order-items">@foreach (var item in order.Items) { <div><span>@item.BookTitle <b>x @item.Quantity</b></span><strong>@((item.UnitPrice * item.Quantity).ToString("N0"))đ</strong></div> }</div>
-                <div class="customer-order-foot"><span>Giao tận nơi</span><b>Tổng cộng: @order.Total.ToString("N0")đ</b></div>
-                @if (order.Status == "Hoàn tất" && !((IEnumerable<ReturnRequest>)ViewBag.ReturnRequests).Any(item => item.OrderId == order.Id))
+                <div class="customer-order-foot"><span>Giao tận nơi</span><b>Tổng tiền sách: @order.Total.ToString("N0")đ</b></div>
+                <a class="return-link" asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id">Chi tiết đơn hàng</a>
+                @if (order.Status == "Hoàn tất" && order.CreatedAt >= DateTime.Now.AddDays(-7) && !((IEnumerable<ReturnRequest>)ViewBag.ReturnRequests).Any(item => item.OrderId == order.Id))
                 {
-                    <a class="return-link" asp-controller="Support" asp-action="Return" asp-route-orderId="@order.Id">Yêu cầu đổi hàng / hoàn tiền</a>
+                    <a class="return-link" asp-controller="Support" asp-action="Return" asp-route-orderId="@order.Id">Yêu cầu trả hàng</a>
                 }
                 @foreach (var request in ((IEnumerable<ReturnRequest>)ViewBag.ReturnRequests).Where(item => item.OrderId == order.Id))
                 {
-                    <div class="return-history">Yêu cầu @request.RequestType: <b>@request.Status</b></div>
+                    <div class="return-history">Yêu cầu trả hàng - hoàn tiền: <b>@request.Status</b></div>
                 }
             </section>
         }

@@ -25,8 +25,8 @@ public static class DbInitializer
             CREATE TABLE [dbo].[CustomerFeedbacks] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [UserId] nvarchar(450) NOT NULL, [Subject] nvarchar(200) NOT NULL, [Message] nvarchar(2000) NOT NULL, [Status] nvarchar(50) NOT NULL, [CreatedAt] datetime2 NOT NULL);
             """);
         await db.Database.ExecuteSqlRawAsync("""
-            UPDATE [dbo].[Orders] SET [Status] = N'Đang xử lý' WHERE [Status] = N'Mới';
-            UPDATE [dbo].[Orders] SET [Status] = N'Đã đóng gói - chờ vận chuyển' WHERE [Status] = N'Đã xác nhận';
+            UPDATE [dbo].[Orders] SET [Status] = N'Cần xác nhận' WHERE [Status] IN (N'Mới', N'Đang xử lý');
+            UPDATE [dbo].[Orders] SET [Status] = N'Đã xác nhận đơn hàng' WHERE [Status] = N'Đã xác nhận';
             UPDATE [dbo].[Orders] SET [Status] = N'Đang vận chuyển' WHERE [Status] = N'Đang giao';
             UPDATE [dbo].[Orders] SET [DeliveryMethod] = N'Ship' WHERE [DeliveryMethod] <> N'Ship';
             """);
@@ -34,9 +34,15 @@ public static class DbInitializer
             IF OBJECT_ID(N'dbo.Categories', N'U') IS NULL
             CREATE TABLE [dbo].[Categories] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [Name] nvarchar(200) NOT NULL, [IsActive] bit NOT NULL);
             IF OBJECT_ID(N'dbo.Orders', N'U') IS NULL
-            CREATE TABLE [dbo].[Orders] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [UserId] nvarchar(450) NULL, [ReceiverName] nvarchar(200) NOT NULL, [Phone] nvarchar(50) NOT NULL, [Address] nvarchar(500) NOT NULL, [DeliveryMethod] nvarchar(30) NOT NULL, [Status] nvarchar(50) NOT NULL, [Total] decimal(18,2) NOT NULL, [CreatedAt] datetime2 NOT NULL);
+            CREATE TABLE [dbo].[Orders] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [UserId] nvarchar(450) NULL, [ReceiverName] nvarchar(200) NOT NULL, [Phone] nvarchar(50) NOT NULL, [Address] nvarchar(500) NOT NULL, [DeliveryMethod] nvarchar(30) NOT NULL, [Status] nvarchar(50) NOT NULL, [CancellationReason] nvarchar(1000) NOT NULL CONSTRAINT [DF_Orders_CancellationReason] DEFAULT N'', [Total] decimal(18,2) NOT NULL, [CreatedAt] datetime2 NOT NULL);
             IF OBJECT_ID(N'dbo.OrderItems', N'U') IS NULL
             CREATE TABLE [dbo].[OrderItems] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [OrderId] int NOT NULL, [BookId] int NOT NULL, [BookTitle] nvarchar(300) NOT NULL, [Quantity] int NOT NULL, [UnitPrice] decimal(18,2) NOT NULL, CONSTRAINT [FK_OrderItems_Orders] FOREIGN KEY ([OrderId]) REFERENCES [dbo].[Orders]([Id]) ON DELETE CASCADE);
+            IF OBJECT_ID(N'dbo.OrderStatusHistories', N'U') IS NULL
+            CREATE TABLE [dbo].[OrderStatusHistories] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [OrderId] int NOT NULL, [OccurredAt] datetime2 NOT NULL, [Action] nvarchar(200) NOT NULL, CONSTRAINT [FK_OrderStatusHistories_Orders] FOREIGN KEY ([OrderId]) REFERENCES [dbo].[Orders]([Id]) ON DELETE CASCADE);
+            """);
+        await db.Database.ExecuteSqlRawAsync("""
+            IF COL_LENGTH(N'dbo.Orders', N'CancellationReason') IS NULL
+                ALTER TABLE [dbo].[Orders] ADD [CancellationReason] nvarchar(1000) NOT NULL CONSTRAINT [DF_Orders_CancellationReason] DEFAULT N'';
             """);
         await db.Database.ExecuteSqlRawAsync("""
             IF COL_LENGTH(N'dbo.ReturnRequests', N'CustomerEmail') IS NULL ALTER TABLE [dbo].[ReturnRequests] ADD [CustomerEmail] nvarchar(256) NOT NULL CONSTRAINT [DF_ReturnRequests_CustomerEmail] DEFAULT N'';
@@ -47,6 +53,9 @@ public static class DbInitializer
             IF OBJECT_ID(N'dbo.Wishlists', N'U') IS NOT NULL
                 DROP TABLE [dbo].[Wishlists];
             """);
+        foreach (var order in await db.Orders.Where(order => !db.OrderStatusHistories.Any(history => history.OrderId == order.Id)).ToListAsync())
+            db.OrderStatusHistories.Add(new OrderStatusHistory { OrderId = order.Id, OccurredAt = order.CreatedAt, Action = "Đã đặt hàng" });
+        await db.SaveChangesAsync();
         await db.Books.Where(book => string.IsNullOrWhiteSpace(book.Title)).ExecuteDeleteAsync();
         if (!await db.Books.AnyAsync())
         {

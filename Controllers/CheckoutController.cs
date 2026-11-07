@@ -24,7 +24,7 @@ public class CheckoutController(AppDbContext db) : Controller
     {
         model.Items = GetCart();
         if (model.Items.Count == 0) return RedirectToAction("Index", "Cart");
-        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(model.ReceiverName) || string.IsNullOrWhiteSpace(model.Phone))
+        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(model.ReceiverName) || string.IsNullOrWhiteSpace(model.Phone) || string.IsNullOrWhiteSpace(model.Address))
             return View("Index", model);
 
         await using var transaction = await db.Database.BeginTransactionAsync();
@@ -35,8 +35,8 @@ public class CheckoutController(AppDbContext db) : Controller
             Phone = model.Phone,
             Address = model.Address,
             DeliveryMethod = model.DeliveryMethod,
-            Total = model.Total,
-            Status = "Đang xử lý"
+            Total = model.Subtotal,
+            Status = "Cần xác nhận"
         };
         foreach (var item in model.Items)
         {
@@ -49,7 +49,15 @@ public class CheckoutController(AppDbContext db) : Controller
             book.Stock -= item.Quantity;
             order.Items.Add(new OrderItem { BookId = book.Id, BookTitle = book.Title, Quantity = item.Quantity, UnitPrice = item.Book.SalePrice });
         }
+        order.Total = model.Subtotal;
         db.Orders.Add(order);
+        await db.SaveChangesAsync();
+        db.OrderStatusHistories.Add(new OrderStatusHistory
+        {
+            OrderId = order.Id,
+            OccurredAt = order.CreatedAt,
+            Action = "Đã đặt hàng"
+        });
         await db.SaveChangesAsync();
         await transaction.CommitAsync();
         HttpContext.Session.Remove("bookstore-cart");

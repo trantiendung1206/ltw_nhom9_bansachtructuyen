@@ -33,7 +33,8 @@ public sealed class Order
     public string Phone { get; set; } = "";
     public string Address { get; set; } = "";
     public string DeliveryMethod { get; set; } = "Ship";
-    public string Status { get; set; } = "Mới";
+    public string Status { get; set; } = "Cần xác nhận";
+    public string CancellationReason { get; set; } = "";
     public decimal Total { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public List<OrderItem> Items { get; set; } = [];
@@ -47,6 +48,15 @@ public sealed class OrderItem
     public string BookTitle { get; set; } = "";
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
+}
+
+public sealed class OrderStatusHistory
+{
+    public int Id { get; set; }
+    public int OrderId { get; set; }
+    public DateTime OccurredAt { get; set; } = DateTime.Now;
+    public string Action { get; set; } = "";
+    public Order? Order { get; set; }
 }
 
 public sealed class ReturnRequest
@@ -115,8 +125,8 @@ public sealed class CheckoutViewModel
     public string CouponCode { get; set; } = "";
     public List<CartItem> Items { get; set; } = [];
     public decimal Subtotal => Items.Sum(item => item.Subtotal);
-    public decimal ShippingFee => Subtotal >= 250000 ? 0 : 30000;
-    public decimal Total => Subtotal + ShippingFee;
+    public decimal ShippingFee => 0;
+    public decimal Total => Subtotal;
 }
 
 public static class StoreData
