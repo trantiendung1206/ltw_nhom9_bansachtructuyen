@@ -55,6 +55,7 @@ public class AdminController(AppDbContext db) : Controller
             return View("BookForm", book);
         }
 
+        NormalizeBook(book);
         db.Books.Add(book);
         await db.SaveChangesAsync();
         return RedirectToAction(nameof(Books));
@@ -77,6 +78,7 @@ public class AdminController(AppDbContext db) : Controller
             return View("BookForm", input);
         }
 
+        NormalizeBook(input);
         book.Title = input.Title;
         book.Author = input.Author;
         book.Category = input.Category;
@@ -100,6 +102,15 @@ public class AdminController(AppDbContext db) : Controller
     {
         ModelState.Remove(nameof(Book.CoverImage));
         ModelState.Remove(nameof(Book.Description));
+    }
+
+    private static void NormalizeBook(Book book)
+    {
+        book.Title ??= "";
+        book.Author ??= "";
+        book.Category ??= "";
+        book.CoverImage ??= "";
+        book.Description ??= "";
     }
 
     [HttpGet("Promotions")]

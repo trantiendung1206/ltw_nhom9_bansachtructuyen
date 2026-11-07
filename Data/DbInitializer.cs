@@ -13,6 +13,10 @@ public static class DbInitializer
         await db.Database.ExecuteSqlRawAsync("""
             IF COL_LENGTH(N'dbo.Books', N'DiscountAmount') IS NULL
                 ALTER TABLE [dbo].[Books] ADD [DiscountAmount] decimal(18,2) NOT NULL CONSTRAINT [DF_Books_DiscountAmount] DEFAULT 0;
+            IF OBJECT_ID(N'dbo.DF_Books_CoverImage', N'D') IS NULL
+                ALTER TABLE [dbo].[Books] ADD CONSTRAINT [DF_Books_CoverImage] DEFAULT N'' FOR [CoverImage];
+            IF OBJECT_ID(N'dbo.DF_Books_Description', N'D') IS NULL
+                ALTER TABLE [dbo].[Books] ADD CONSTRAINT [DF_Books_Description] DEFAULT N'' FOR [Description];
             """);
         await db.Database.ExecuteSqlRawAsync("""
             IF OBJECT_ID(N'dbo.ReturnRequests', N'U') IS NULL
