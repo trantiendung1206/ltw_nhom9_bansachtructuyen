@@ -20,9 +20,9 @@ public static class DbInitializer
             """);
         await db.Database.ExecuteSqlRawAsync("""
             IF OBJECT_ID(N'dbo.ReturnRequests', N'U') IS NULL
-            CREATE TABLE [dbo].[ReturnRequests] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [OrderId] int NOT NULL, [UserId] nvarchar(450) NOT NULL, [RequestType] nvarchar(30) NOT NULL, [Reason] nvarchar(1000) NOT NULL, [Status] nvarchar(50) NOT NULL, [CreatedAt] datetime2 NOT NULL, [ResolvedAt] datetime2 NULL, CONSTRAINT [FK_ReturnRequests_Orders] FOREIGN KEY ([OrderId]) REFERENCES [dbo].[Orders]([Id]) ON DELETE CASCADE);
+            CREATE TABLE [dbo].[ReturnRequests] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [OrderId] int NOT NULL, [UserId] nvarchar(450) NOT NULL, [RequestType] nvarchar(30) NOT NULL, [Reason] nvarchar(1000) NOT NULL, [Status] nvarchar(50) NOT NULL, [RejectionReason] nvarchar(1000) NOT NULL CONSTRAINT [DF_ReturnRequests_RejectionReason] DEFAULT N'', [CreatedAt] datetime2 NOT NULL, [ResolvedAt] datetime2 NULL, CONSTRAINT [FK_ReturnRequests_Orders] FOREIGN KEY ([OrderId]) REFERENCES [dbo].[Orders]([Id]) ON DELETE CASCADE);
             IF OBJECT_ID(N'dbo.CustomerFeedbacks', N'U') IS NULL
-            CREATE TABLE [dbo].[CustomerFeedbacks] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [UserId] nvarchar(450) NOT NULL, [Subject] nvarchar(200) NOT NULL, [Message] nvarchar(2000) NOT NULL, [Status] nvarchar(50) NOT NULL, [CreatedAt] datetime2 NOT NULL);
+            CREATE TABLE [dbo].[CustomerFeedbacks] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [UserId] nvarchar(450) NOT NULL, [Subject] nvarchar(200) NOT NULL, [Message] nvarchar(2000) NOT NULL, [CustomerEmail] nvarchar(256) NOT NULL CONSTRAINT [DF_CustomerFeedbacks_CustomerEmail] DEFAULT N'', [Status] nvarchar(50) NOT NULL, [CreatedAt] datetime2 NOT NULL);
             """);
         await db.Database.ExecuteSqlRawAsync("""
             UPDATE [dbo].[Orders] SET [Status] = N'Cần xác nhận' WHERE [Status] IN (N'Mới', N'Đang xử lý');
@@ -34,7 +34,7 @@ public static class DbInitializer
             IF OBJECT_ID(N'dbo.Categories', N'U') IS NULL
             CREATE TABLE [dbo].[Categories] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [Name] nvarchar(200) NOT NULL, [IsActive] bit NOT NULL);
             IF OBJECT_ID(N'dbo.Orders', N'U') IS NULL
-            CREATE TABLE [dbo].[Orders] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [UserId] nvarchar(450) NULL, [ReceiverName] nvarchar(200) NOT NULL, [Phone] nvarchar(50) NOT NULL, [Address] nvarchar(500) NOT NULL, [DeliveryMethod] nvarchar(30) NOT NULL, [Status] nvarchar(50) NOT NULL, [CancellationReason] nvarchar(1000) NOT NULL CONSTRAINT [DF_Orders_CancellationReason] DEFAULT N'', [Total] decimal(18,2) NOT NULL, [CreatedAt] datetime2 NOT NULL);
+            CREATE TABLE [dbo].[Orders] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [UserId] nvarchar(450) NULL, [ReceiverName] nvarchar(200) NOT NULL, [Phone] nvarchar(50) NOT NULL, [Address] nvarchar(500) NOT NULL, [DeliveryMethod] nvarchar(30) NOT NULL, [Status] nvarchar(50) NOT NULL, [CancellationReason] nvarchar(1000) NOT NULL CONSTRAINT [DF_Orders_CancellationReason] DEFAULT N'', [Total] decimal(18,2) NOT NULL, [RefundedAmount] decimal(18,2) NOT NULL CONSTRAINT [DF_Orders_RefundedAmount] DEFAULT 0, [CreatedAt] datetime2 NOT NULL);
             IF OBJECT_ID(N'dbo.OrderItems', N'U') IS NULL
             CREATE TABLE [dbo].[OrderItems] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [OrderId] int NOT NULL, [BookId] int NOT NULL, [BookTitle] nvarchar(300) NOT NULL, [Quantity] int NOT NULL, [UnitPrice] decimal(18,2) NOT NULL, CONSTRAINT [FK_OrderItems_Orders] FOREIGN KEY ([OrderId]) REFERENCES [dbo].[Orders]([Id]) ON DELETE CASCADE);
             IF OBJECT_ID(N'dbo.OrderStatusHistories', N'U') IS NULL
@@ -43,11 +43,14 @@ public static class DbInitializer
         await db.Database.ExecuteSqlRawAsync("""
             IF COL_LENGTH(N'dbo.Orders', N'CancellationReason') IS NULL
                 ALTER TABLE [dbo].[Orders] ADD [CancellationReason] nvarchar(1000) NOT NULL CONSTRAINT [DF_Orders_CancellationReason] DEFAULT N'';
+            IF COL_LENGTH(N'dbo.Orders', N'RefundedAmount') IS NULL
+                ALTER TABLE [dbo].[Orders] ADD [RefundedAmount] decimal(18,2) NOT NULL CONSTRAINT [DF_Orders_RefundedAmount] DEFAULT 0;
             """);
         await db.Database.ExecuteSqlRawAsync("""
             IF COL_LENGTH(N'dbo.ReturnRequests', N'CustomerEmail') IS NULL ALTER TABLE [dbo].[ReturnRequests] ADD [CustomerEmail] nvarchar(256) NOT NULL CONSTRAINT [DF_ReturnRequests_CustomerEmail] DEFAULT N'';
             IF COL_LENGTH(N'dbo.ReturnRequests', N'CustomerPhone') IS NULL ALTER TABLE [dbo].[ReturnRequests] ADD [CustomerPhone] nvarchar(50) NOT NULL CONSTRAINT [DF_ReturnRequests_CustomerPhone] DEFAULT N'';
             IF COL_LENGTH(N'dbo.CustomerFeedbacks', N'CustomerEmail') IS NULL ALTER TABLE [dbo].[CustomerFeedbacks] ADD [CustomerEmail] nvarchar(256) NOT NULL CONSTRAINT [DF_CustomerFeedbacks_CustomerEmail] DEFAULT N'';
+            IF COL_LENGTH(N'dbo.ReturnRequests', N'RejectionReason') IS NULL ALTER TABLE [dbo].[ReturnRequests] ADD [RejectionReason] nvarchar(1000) NOT NULL CONSTRAINT [DF_ReturnRequests_RejectionReason] DEFAULT N'';
             """);
         await db.Database.ExecuteSqlRawAsync("""
             IF OBJECT_ID(N'dbo.Wishlists', N'U') IS NOT NULL

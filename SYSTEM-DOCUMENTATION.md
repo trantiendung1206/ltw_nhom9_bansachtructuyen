@@ -370,8 +370,13 @@ mục để mở danh sách sách.
 - Mã yêu cầu và mã đơn hiển thị dạng dễ đọc.
 - Xem lý do, thời gian và trạng thái yêu cầu hoàn tiền.
 - Xem trực tiếp email và số điện thoại khách để liên hệ.
-- **Xác nhận**: chuyển `Chờ xác nhận` thành `Chấp nhận yêu cầu trả hàng`.
-- Khi trạng thái không còn là `Chờ xác nhận`, hệ thống lưu thời gian xử lý.
+- **Chấp nhận**: chuyển `Chờ xác nhận` thành `Chấp nhận yêu cầu trả hàng`,
+  hoàn tiền bằng tổng đơn, trừ khoản hoàn khỏi doanh thu và cộng lại số lượng
+  từng sách vào tồn kho trong cùng một transaction.
+- **Không chấp nhận**: bắt buộc nhập lý do, chuyển thành `Từ chối yêu cầu trả
+  hàng` và hiển thị lý do cho khách hàng.
+- Khi trạng thái không còn là `Chờ xác nhận`, hệ thống lưu thời gian xử lý;
+  thao tác chấp nhận chỉ thực hiện một lần để không cộng tồn kho trùng.
 
 ### 6.7. Quản lý góp ý
 
@@ -442,10 +447,10 @@ nghiệp vụ sau:
 |---|---|---|
 | `Books` | `Id`, `Title`, `Author`, `Category`, `Price`, `DiscountPercent`, `DiscountAmount`, `Stock`, `Rating`, `CoverImage`, `Description` | Danh mục sách và tồn kho; `Price`, `DiscountAmount` dùng `decimal(18,2)` |
 | `Categories` | `Id`, `Name`, `IsActive` | 7 danh mục hệ thống; không có CRUD danh mục trên Admin |
-| `Orders` | `Id`, `UserId`, `ReceiverName`, `Phone`, `Address`, `DeliveryMethod`, `Status`, `CancellationReason`, `Total`, `CreatedAt` | Đơn hàng; `UserId` có thể rỗng; giao hàng chỉ dùng `Ship` |
+| `Orders` | `Id`, `UserId`, `ReceiverName`, `Phone`, `Address`, `DeliveryMethod`, `Status`, `CancellationReason`, `Total`, `RefundedAmount`, `CreatedAt` | Đơn hàng; `UserId` có thể rỗng; `RefundedAmount` dùng để trừ doanh thu khi hoàn hàng; giao hàng chỉ dùng `Ship` |
 | `OrderItems` | `Id`, `OrderId`, `BookId`, `BookTitle`, `Quantity`, `UnitPrice` | Các dòng trong đơn; `OrderId` xóa dây chuyền theo `Orders` |
 | `OrderStatusHistories` | `Id`, `OrderId`, `OccurredAt`, `Action` | Lịch sử trạng thái; `OrderId` xóa dây chuyền theo `Orders` |
-| `ReturnRequests` | `Id`, `OrderId`, `UserId`, `CustomerEmail`, `CustomerPhone`, `RequestType`, `Reason`, `Status`, `CreatedAt`, `ResolvedAt` | Yêu cầu hoàn tiền; `OrderId` xóa dây chuyền theo `Orders` |
+| `ReturnRequests` | `Id`, `OrderId`, `UserId`, `CustomerEmail`, `CustomerPhone`, `RequestType`, `Reason`, `Status`, `RejectionReason`, `CreatedAt`, `ResolvedAt` | Yêu cầu hoàn tiền hoặc từ chối; `OrderId` xóa dây chuyền theo `Orders` |
 | `CustomerFeedbacks` | `Id`, `UserId`, `CustomerEmail`, `Subject`, `Message`, `Status`, `CreatedAt` | Góp ý của khách hàng |
 
 Identity tạo các bảng `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles`,

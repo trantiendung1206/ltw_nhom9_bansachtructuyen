@@ -26,7 +26,8 @@ public class SupportController(AppDbContext db, UserManager<AppUser> userManager
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var order = await db.Orders.FirstOrDefaultAsync(item => item.Id == model.OrderId && item.UserId == userId);
         if (order is null || order.Status != "Hoàn tất" || order.CreatedAt < DateTime.Now.AddDays(-7)) return NotFound();
-        if (await db.ReturnRequests.AnyAsync(item => item.OrderId == order.Id)) return Conflict("Đơn hàng đã có yêu cầu trả hàng.");
+        if (await db.ReturnRequests.AnyAsync(item => item.OrderId == order.Id && item.Status != "Từ chối yêu cầu trả hàng"))
+            return Conflict("Đơn hàng đã có yêu cầu trả hàng đang xử lý hoặc đã được chấp nhận.");
         if (string.IsNullOrWhiteSpace(model.Reason))
         {
             ModelState.AddModelError(nameof(model.Reason), "Vui lòng nhập lý do.");

@@ -20,7 +20,8 @@ public class AdminController(AppDbContext db) : Controller
             TotalStock = await db.Books.SumAsync(book => book.Stock),
             TotalCategories = await db.Categories.CountAsync(category => category.IsActive),
             TotalOrders = await db.Orders.CountAsync(),
-            Revenue = await db.Orders.Where(order => order.Status == "Hoàn tất").SumAsync(order => (decimal?)order.Total) ?? 0,
+            Revenue = await db.Orders.Where(order => order.Status == "Hoàn tất")
+                .SumAsync(order => (decimal?)(order.Total - order.RefundedAmount)) ?? 0,
             FeaturedBooks = await db.Books.OrderByDescending(book => book.Rating).Take(5).AsNoTracking().ToListAsync()
         };
         stats.BestSellingBook = await db.OrderItems
@@ -256,15 +257,54 @@ public class AdminController(AppDbContext db) : Controller
         return View(await requests.OrderByDescending(item => item.CreatedAt).ToListAsync());
     }
 
-    [HttpPost("Returns/Status/{id}"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateReturnStatus(int id, string? q)
+    [HttpPost("Returns/Accept/{id}"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> AcceptReturn(int id, string? q)
     {
+        var request = await db.ReturnRequests
+            .Include(item => item.Order)
+            .ThenInclude(order => order!.Items)
+            .FirstOrDefaultAsync(item => item.Id == id);
+        if (request is not null && request.Status == "Chờ xác nhận" && request.Order is not null)
+        {
+            var bookIds = request.Order.Items.Select(item => item.BookId).Distinct().ToList();
+            var books = await db.Books.Where(book => bookIds.Contains(book.Id)).ToDictionaryAsync(book => book.Id);
+            if (books.Count != bookIds.Count)
+            {
+                TempData["Message"] = "Không thể hoàn hàng vì một hoặc nhiều sách trong đơn không còn tồn tại.";
+                return RedirectToAction(nameof(Returns), new { q });
+            }
+
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            foreach (var item in request.Order.Items)
+                books[item.BookId].Stock += item.Quantity;
+            request.Order.RefundedAmount = request.Order.Total;
+            request.Status = "Chấp nhận yêu cầu trả hàng";
+            request.RejectionReason = "";
+            request.ResolvedAt = DateTime.Now;
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+            TempData["Message"] = $"Đã chấp nhận yêu cầu #{request.Id:D8}, hoàn tiền và cộng lại tồn kho.";
+        }
+        return RedirectToAction(nameof(Returns), new { q });
+    }
+
+    [HttpPost("Returns/Reject/{id}"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> RejectReturn(int id, string? reason, string? q)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            TempData["Message"] = "Vui lòng nêu lý do không chấp nhận yêu cầu trả hàng.";
+            return RedirectToAction(nameof(Returns), new { q });
+        }
+
         var request = await db.ReturnRequests.FindAsync(id);
         if (request is not null && request.Status == "Chờ xác nhận")
         {
-            request.Status = "Chấp nhận yêu cầu trả hàng";
+            request.Status = "Từ chối yêu cầu trả hàng";
+            request.RejectionReason = reason.Trim();
             request.ResolvedAt = DateTime.Now;
             await db.SaveChangesAsync();
+            TempData["Message"] = $"Đã từ chối yêu cầu #{request.Id:D8}.";
         }
         return RedirectToAction(nameof(Returns), new { q });
     }

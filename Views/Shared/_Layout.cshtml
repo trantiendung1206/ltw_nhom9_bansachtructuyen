@@ -32,7 +32,7 @@
 <body>
     <header class="site-header">
         <nav class="navbar navbar-expand-lg container">
-            <a class="brand" asp-controller="Home" asp-action="Index"><span class="brand-mark">GN</span><span class="brand-copy">GroupNine<small>Nhà sách trực tuyến</small></span></a>
+            <a class="brand" asp-controller="Home" asp-action="Index"><span class="brand-mark">GN</span><span class="brand-copy">GroupNine<small>Website bán sách trực tuyến</small></span></a>
             <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#mainNav">☰</button>
             <div class="collapse navbar-collapse" id="mainNav">
                 <form class="search-form mx-lg-4" asp-controller="Books" asp-action="Index" role="search">
@@ -42,12 +42,12 @@
                 <div class="nav-actions ms-auto">
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <form asp-controller="Account" asp-action="Logout" method="post" class="nav-action account-nav"><span>♙</span><button class="account-button" type="submit"><small>Đăng xuất</small></button><b>@displayName</b></form>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="nav-action account-nav"><span class="avatar-icon" aria-hidden="true"></span><button class="account-button" type="submit"><small>Đăng xuất</small></button><b>@displayName</b></form>
                         @if (User.IsInRole("Admin")) { <a asp-controller="Admin" asp-action="Index" class="nav-action"><small>Quản trị</small></a> }
                     }
                     else
                     {
-                        <a asp-controller="Account" asp-action="Login" class="nav-action"><span>♙</span><small>Đăng nhập</small></a>
+                        <a asp-controller="Account" asp-action="Login" class="nav-action"><span class="avatar-icon" aria-hidden="true"></span><small>Đăng nhập</small></a>
                     }
                     <a asp-controller="Orders" asp-action="Index" class="nav-action"><span>▤</span><small>Đơn hàng</small></a>
                     <a asp-controller="Cart" asp-action="Index" class="nav-action cart-action"><span>🛒<i>@cartCount</i></span><small>Giỏ hàng</small></a>

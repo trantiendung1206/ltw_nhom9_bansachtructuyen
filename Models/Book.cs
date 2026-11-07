@@ -36,6 +36,7 @@ public sealed class Order
     public string Status { get; set; } = "Cần xác nhận";
     public string CancellationReason { get; set; } = "";
     public decimal Total { get; set; }
+    public decimal RefundedAmount { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public List<OrderItem> Items { get; set; } = [];
 }
@@ -70,6 +71,7 @@ public sealed class ReturnRequest
     [Required]
     public string Reason { get; set; } = "";
     public string Status { get; set; } = "Chờ xác nhận";
+    public string RejectionReason { get; set; } = "";
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime? ResolvedAt { get; set; }
     public Order? Order { get; set; }

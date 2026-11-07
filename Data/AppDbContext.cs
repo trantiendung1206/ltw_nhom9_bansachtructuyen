@@ -28,6 +28,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         builder.Entity<Book>().Property(book => book.Price).HasPrecision(18, 2);
         builder.Entity<Book>().Property(book => book.DiscountAmount).HasPrecision(18, 2);
         builder.Entity<Order>().Property(order => order.Total).HasPrecision(18, 2);
+        builder.Entity<Order>().Property(order => order.RefundedAmount).HasPrecision(18, 2);
         builder.Entity<OrderItem>().Property(item => item.UnitPrice).HasPrecision(18, 2);
         builder.Entity<OrderStatusHistory>().HasOne(item => item.Order).WithMany().HasForeignKey(item => item.OrderId).OnDelete(DeleteBehavior.Cascade);
     }
