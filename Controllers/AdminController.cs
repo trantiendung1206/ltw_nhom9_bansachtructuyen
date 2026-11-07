@@ -47,6 +47,7 @@ public class AdminController(AppDbContext db) : Controller
     [HttpPost("Books/Create"), ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateBook(Book book)
     {
+        AllowOptionalBookFields();
         if (!ModelState.IsValid)
         {
             TempData["Message"] = "Dữ liệu sách chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.";
@@ -67,6 +68,7 @@ public class AdminController(AppDbContext db) : Controller
     {
         var book = await db.Books.FindAsync(id);
         if (book is null) return NotFound();
+        AllowOptionalBookFields();
         if (!ModelState.IsValid)
         {
             TempData["Message"] = "Dữ liệu sách chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.";
@@ -93,6 +95,12 @@ public class AdminController(AppDbContext db) : Controller
             .Where(category => category.IsActive)
             .OrderBy(category => category.Name)
             .ToListAsync();
+
+    private void AllowOptionalBookFields()
+    {
+        ModelState.Remove(nameof(Book.CoverImage));
+        ModelState.Remove(nameof(Book.Description));
+    }
 
     [HttpGet("Promotions")]
     public async Task<IActionResult> Promotions(string? q, string? category)
