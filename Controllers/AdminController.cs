@@ -45,13 +45,52 @@ public class AdminController(AppDbContext db) : Controller
     public async Task<IActionResult> CreateBook() { ViewBag.Categories = await db.Categories.Where(c => c.IsActive).ToListAsync(); return View("BookForm", new Book()); }
 
     [HttpPost("Books/Create"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateBook(Book book) { if (!ModelState.IsValid) return View("BookForm", book); db.Books.Add(book); await db.SaveChangesAsync(); return RedirectToAction(nameof(Books)); }
+    public async Task<IActionResult> CreateBook(Book book)
+    {
+        if (!ModelState.IsValid)
+        {
+            await LoadBookCategoriesAsync();
+            return View("BookForm", book);
+        }
+
+        db.Books.Add(book);
+        await db.SaveChangesAsync();
+        return RedirectToAction(nameof(Books));
+    }
 
     [HttpGet("Books/Edit/{id}")]
     public async Task<IActionResult> EditBook(int id) { var book = await db.Books.FindAsync(id); if (book is null) return NotFound(); ViewBag.Categories = await db.Categories.Where(c => c.IsActive).ToListAsync(); return View("BookForm", book); }
 
     [HttpPost("Books/Edit/{id}"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditBook(int id, Book input) { var book = await db.Books.FindAsync(id); if (book is null) return NotFound(); book.Title = input.Title; book.Author = input.Author; book.Category = input.Category; book.Price = input.Price; book.DiscountPercent = input.DiscountPercent; book.DiscountAmount = input.DiscountAmount; book.Stock = input.Stock; book.CoverImage = input.CoverImage; book.Description = input.Description; await db.SaveChangesAsync(); return RedirectToAction(nameof(Books)); }
+    public async Task<IActionResult> EditBook(int id, Book input)
+    {
+        var book = await db.Books.FindAsync(id);
+        if (book is null) return NotFound();
+        if (!ModelState.IsValid)
+        {
+            input.Id = id;
+            await LoadBookCategoriesAsync();
+            return View("BookForm", input);
+        }
+
+        book.Title = input.Title;
+        book.Author = input.Author;
+        book.Category = input.Category;
+        book.Price = input.Price;
+        book.DiscountPercent = input.DiscountPercent;
+        book.DiscountAmount = input.DiscountAmount;
+        book.Stock = input.Stock;
+        book.CoverImage = input.CoverImage;
+        book.Description = input.Description;
+        await db.SaveChangesAsync();
+        return RedirectToAction(nameof(Books));
+    }
+
+    private async Task LoadBookCategoriesAsync() =>
+        ViewBag.Categories = await db.Categories
+            .Where(category => category.IsActive)
+            .OrderBy(category => category.Name)
+            .ToListAsync();
 
     [HttpGet("Promotions")]
     public async Task<IActionResult> Promotions(string? q, string? category)
