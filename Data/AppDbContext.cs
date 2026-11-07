@@ -15,7 +15,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     : IdentityDbContext<AppUser>(options)
 {
     public DbSet<Book> Books => Set<Book>();
-    public DbSet<WishlistItem> Wishlists => Set<WishlistItem>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
@@ -29,7 +28,5 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         builder.Entity<Book>().Property(book => book.DiscountAmount).HasPrecision(18, 2);
         builder.Entity<Order>().Property(order => order.Total).HasPrecision(18, 2);
         builder.Entity<OrderItem>().Property(item => item.UnitPrice).HasPrecision(18, 2);
-        builder.Entity<WishlistItem>().HasKey(item => new { item.UserId, item.BookId });
-        builder.Entity<WishlistItem>().HasOne(item => item.Book).WithMany().HasForeignKey(item => item.BookId);
     }
 }

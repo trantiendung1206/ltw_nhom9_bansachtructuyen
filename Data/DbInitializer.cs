@@ -40,16 +40,8 @@ public static class DbInitializer
             IF COL_LENGTH(N'dbo.CustomerFeedbacks', N'CustomerEmail') IS NULL ALTER TABLE [dbo].[CustomerFeedbacks] ADD [CustomerEmail] nvarchar(256) NOT NULL CONSTRAINT [DF_CustomerFeedbacks_CustomerEmail] DEFAULT N'';
             """);
         await db.Database.ExecuteSqlRawAsync("""
-            IF OBJECT_ID(N'dbo.Wishlists', N'U') IS NULL
-            BEGIN
-                CREATE TABLE [dbo].[Wishlists] (
-                    [UserId] nvarchar(450) NOT NULL,
-                    [BookId] int NOT NULL,
-                    [AddedAt] datetime2 NOT NULL,
-                    CONSTRAINT [PK_Wishlists] PRIMARY KEY ([UserId], [BookId]),
-                    CONSTRAINT [FK_Wishlists_Books_BookId] FOREIGN KEY ([BookId]) REFERENCES [dbo].[Books] ([Id]) ON DELETE CASCADE
-                );
-            END
+            IF OBJECT_ID(N'dbo.Wishlists', N'U') IS NOT NULL
+                DROP TABLE [dbo].[Wishlists];
             """);
         await db.Books.Where(book => string.IsNullOrWhiteSpace(book.Title)).ExecuteDeleteAsync();
         if (!await db.Books.AnyAsync())

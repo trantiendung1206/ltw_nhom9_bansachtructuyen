@@ -106,14 +106,6 @@ public sealed class CartItem
     public decimal Subtotal => Book.SalePrice * Quantity;
 }
 
-public sealed class WishlistItem
-{
-    public string UserId { get; set; } = "";
-    public int BookId { get; set; }
-    public DateTime AddedAt { get; set; } = DateTime.UtcNow;
-    public Book Book { get; set; } = new();
-}
-
 public sealed class CheckoutViewModel
 {
     public string ReceiverName { get; set; } = "";

@@ -1,4 +1,0 @@
-@model List<WishlistItem>
-@{ ViewData["Title"] = "Sách yêu thích"; }
-<div class="container page-heading"><span class="eyebrow">DANH SÁCH CỦA BẠN</span><h1>Sách yêu thích</h1><p>Những cuốn sách bạn muốn đọc trong thời gian tới.</p></div>
-<div class="container wishlist-page">@if (Model.Count == 0) { <div class="empty-state"><div class="empty-icon">♡</div><h2>Chưa có sách yêu thích</h2><p>Hãy đăng nhập và lưu lại những cuốn sách bạn muốn đọc.</p><a class="btn btn-orange mt-3" asp-controller="Books" asp-action="Index">Khám phá sách</a></div> } else { <div class="row g-4">@foreach (var item in Model) { <div class="col-6 col-md-3"><partial name="_BookCard" model="item.Book" /><form asp-controller="Wishlist" asp-action="Remove" method="post" class="mt-2"><input type="hidden" name="bookId" value="@item.BookId" /><button class="btn btn-sm btn-outline-secondary w-100">Bỏ khỏi yêu thích</button></form></div> }</div> }</div>

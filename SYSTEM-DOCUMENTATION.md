@@ -7,7 +7,7 @@
 bán sách online tại Việt Nam:
 
 - Khách hàng xem, tìm kiếm, lọc và mua sách.
-- Khách hàng quản lý giỏ hàng, yêu thích, đơn hàng, đổi trả và góp ý.
+- Khách hàng quản lý giỏ hàng, đơn hàng, đổi trả và góp ý.
 - Nhân viên/quản trị viên quản lý sách, kho, danh mục, khuyến mãi, đơn hàng,
   đổi trả và góp ý.
 - Không hỗ trợ nghiệp vụ nhận hàng tại cửa hàng; mọi đơn hàng đều giao tận nơi.
@@ -66,7 +66,7 @@ Script tạo database `LatTrangBookStore`. Khi ứng dụng khởi động,
 `DbInitializer` tiếp tục:
 
 1. Tạo bảng Identity.
-2. Tạo bảng sách, danh mục, đơn hàng, chi tiết đơn hàng, wishlist, đổi trả
+2. Tạo bảng sách, danh mục, đơn hàng, chi tiết đơn hàng, đổi trả
    và góp ý.
 3. Bổ sung các cột schema còn thiếu nếu database đã tồn tại từ phiên bản cũ.
 4. Chuẩn hóa trạng thái đơn hàng và hình thức giao hàng.
@@ -105,7 +105,7 @@ trình vẫn kiểm tra schema và seed dữ liệu cần thiết.
 ### Khách chưa đăng nhập
 
 - Được xem trang chủ, danh sách sách, chi tiết sách và tìm kiếm.
-- Khi truy cập giỏ hàng, thanh toán, yêu thích, đơn hàng hoặc hỗ trợ sẽ được
+- Khi truy cập giỏ hàng, thanh toán, đơn hàng hoặc hỗ trợ sẽ được
   chuyển tới trang đăng nhập.
 
 ### Khách hàng (`Customer`)
@@ -113,7 +113,7 @@ trình vẫn kiểm tra schema và seed dữ liệu cần thiết.
 - Đăng nhập bằng email hoặc số điện thoại.
 - Đăng ký tài khoản mới bằng họ tên, email, số điện thoại, mật khẩu và xác
   nhận mật khẩu.
-- Mua sách, quản lý giỏ hàng, yêu thích và theo dõi đơn.
+- Mua sách, quản lý giỏ hàng và theo dõi đơn.
 - Gửi yêu cầu đổi hàng/hoàn tiền và góp ý.
 
 ### Quản trị viên (`Admin`)
@@ -131,7 +131,7 @@ Trang chủ hiển thị:
 
 - Logo và tên thương hiệu Lật Trang.
 - Ô tìm kiếm.
-- Liên kết giỏ hàng, đơn hàng, yêu thích và tài khoản.
+- Liên kết giỏ hàng, đơn hàng và tài khoản.
 - Thanh danh mục sách.
 - Sách nổi bật, sách bán chạy, sách mới và sách đang khuyến mãi.
 - Trích dẫn cuối trang được chọn ngẫu nhiên từ khoảng 10 câu mỗi lần tải.
@@ -163,8 +163,6 @@ Hiển thị tên, tác giả, danh mục, ảnh, giá gốc, giá bán, mức g
 mô tả và tồn kho.
 
 - **Thêm vào giỏ**: thêm sách với số lượng chọn trước.
-- **Yêu thích**: lưu sách vào wishlist của tài khoản hiện tại; khi đã lưu,
-  biểu tượng trái tim được tô đen.
 - **Mua/đến giỏ hàng**: chuyển người dùng tới giỏ để kiểm tra trước khi đặt.
 
 ### 5.4. Đăng nhập, đăng ký và đăng xuất
@@ -229,16 +227,7 @@ Nút **Đặt hàng**:
 5. Xóa giỏ hàng sau khi lưu thành công.
 6. Hiển thị mã đơn hàng.
 
-### 5.7. Yêu thích
-
-Đường dẫn: `/Wishlist`
-
-- **Thêm yêu thích**: tạo bản ghi theo cặp tài khoản/sách.
-- **Bỏ yêu thích**: xóa bản ghi tương ứng.
-- Sách đã yêu thích vẫn hiển thị trong danh sách, không bị mất do thao tác
-  toggle nhầm.
-
-### 5.8. Đơn hàng khách hàng
+### 5.7. Đơn hàng khách hàng
 
 Đường dẫn: `/Orders`
 
@@ -260,7 +249,7 @@ Trạng thái đơn:
 4. `Hoàn tất`
 5. `Đã hủy`
 
-### 5.9. Đổi trả
+### 5.8. Đổi trả
 
 Đổi trả thực hiện từ đơn hàng đã mua, bằng nút **Yêu cầu đổi trả**.
 
@@ -273,7 +262,7 @@ Nút **Gửi yêu cầu** tạo yêu cầu trạng thái `Chờ xác nhận`. Qu
 tin liên hệ và quyết định xác nhận hoặc từ chối. Quy trình vận chuyển thực tế
 do nhân viên xử lý bên ngoài phạm vi website.
 
-### 5.10. Góp ý
+### 5.9. Góp ý
 
 Đường dẫn: `/Support/Feedback`
 
@@ -443,7 +432,6 @@ Các bảng nghiệp vụ chính:
 - `Categories`.
 - `Orders`.
 - `OrderItems`.
-- `Wishlists`.
 - `ReturnRequests`.
 - `CustomerFeedbacks`.
 

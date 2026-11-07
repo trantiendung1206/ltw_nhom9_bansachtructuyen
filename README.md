@@ -102,7 +102,7 @@ dotnet run
 - Quản trị sách: `/Admin` (chỉ role Admin truy cập được)
 - Admin có giao diện riêng, không dùng header/footer cửa hàng; gồm thống kê hệ thống (tồn kho, doanh thu, đơn hàng, sách/danh mục bán chạy), CRUD sách, quản lý kho, danh mục, đơn hàng và ưu đãi.
 - Quản lý ưu đãi tại `/Admin/Promotions`: lọc theo tên/mã sách hoặc danh mục, áp dụng giảm theo phần trăm hoặc số tiền trực tiếp, và xóa ưu đãi từng sách.
-- Giỏ hàng, đặt hàng và yêu thích yêu cầu đăng nhập; khách chưa đăng nhập sẽ được chuyển tới `/Account/Login`.
+- Giỏ hàng và đặt hàng yêu cầu đăng nhập; khách chưa đăng nhập sẽ được chuyển tới `/Account/Login`.
 
 Các bảng Identity và dữ liệu sách được tạo tự động bằng `EnsureCreated`. Connection string nằm trong `appsettings.json`.
 

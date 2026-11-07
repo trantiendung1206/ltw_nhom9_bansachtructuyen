@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using sc.Data;
 using sc.Models;
-using System.Security.Claims;
 
 namespace sc.Controllers;
 
@@ -29,11 +28,6 @@ public class BooksController(AppDbContext db) : Controller
         ViewBag.Categories = selectedCategories;
         ViewBag.Sort = sort;
         ViewBag.Promotion = promotion;
-        if (User.Identity?.IsAuthenticated == true)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            ViewBag.WishlistBookIds = await db.Wishlists.Where(item => item.UserId == userId).Select(item => item.BookId).ToListAsync();
-        }
         return View(books.ToList());
     }
 
@@ -41,11 +35,6 @@ public class BooksController(AppDbContext db) : Controller
     {
         var book = await db.Books.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id && b.Title != "");
         if (book is null) return NotFound();
-        if (User.Identity?.IsAuthenticated == true)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            ViewBag.IsWishlisted = await db.Wishlists.AnyAsync(item => item.UserId == userId && item.BookId == id);
-        }
         return View(book);
     }
 }
