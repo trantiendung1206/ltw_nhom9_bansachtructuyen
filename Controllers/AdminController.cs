@@ -49,6 +49,7 @@ public class AdminController(AppDbContext db) : Controller
     {
         if (!ModelState.IsValid)
         {
+            TempData["Message"] = "Dữ liệu sách chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.";
             await LoadBookCategoriesAsync();
             return View("BookForm", book);
         }
@@ -68,6 +69,7 @@ public class AdminController(AppDbContext db) : Controller
         if (book is null) return NotFound();
         if (!ModelState.IsValid)
         {
+            TempData["Message"] = "Dữ liệu sách chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.";
             input.Id = id;
             await LoadBookCategoriesAsync();
             return View("BookForm", input);
