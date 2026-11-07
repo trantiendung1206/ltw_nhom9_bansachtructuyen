@@ -1,0 +1,91 @@
+@inject UserManager<sc.Data.AppUser> UserManager
+@{
+    var cartJson = Context.Session.GetString("bookstore-cart");
+    var cartCount = 0;
+    var displayName = User.Identity?.Name;
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var currentUser = currentUserId is null ? null : await UserManager.FindByIdAsync(currentUserId);
+        displayName = string.IsNullOrWhiteSpace(currentUser?.FullName) ? currentUser?.Email : currentUser.FullName;
+    }
+    if (!string.IsNullOrWhiteSpace(cartJson))
+    {
+        try
+        {
+            var cartItems = System.Text.Json.JsonSerializer.Deserialize<List<CartItem>>(cartJson);
+            cartCount = cartItems?.Sum(item => item.Quantity) ?? 0;
+        }
+        catch (System.Text.Json.JsonException) { cartCount = 0; }
+    }
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Lật Trang</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="notice"><div class="container notice-inner"><span>🚚 Miễn phí vận chuyển đơn từ 250.000đ</span><span>Đổi trả miễn phí trong 7 ngày</span><span>Hotline: 1900 1234</span></div></div>
+    <header class="site-header">
+        <nav class="navbar navbar-expand-lg container">
+            <a class="brand" asp-controller="Home" asp-action="Index"><span class="brand-mark">LT</span><span class="brand-copy">Lật Trang<small>Nhà sách trực tuyến</small></span></a>
+            <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#mainNav">☰</button>
+            <div class="collapse navbar-collapse" id="mainNav">
+                <form class="search-form mx-lg-4" asp-controller="Books" asp-action="Index" role="search">
+                    <span class="search-icon">⌕</span><input name="q" placeholder="Tìm kiếm sách, tác giả, ISBN..." value="@Context.Request.Query["q"]" />
+                    <button aria-label="Tìm kiếm">Tìm kiếm</button>
+                </form>
+                <div class="nav-actions ms-auto">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="nav-action account-nav"><span>♙</span><button class="account-button" type="submit"><small>Đăng xuất</small></button><b>@displayName</b></form>
+                        @if (User.IsInRole("Admin")) { <a asp-controller="Admin" asp-action="Index" class="nav-action"><small>Quản trị</small></a> }
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Login" class="nav-action"><span>♙</span><small>Đăng nhập</small></a>
+                    }
+                    <a asp-controller="Wishlist" asp-action="Index" class="nav-action"><span>♡</span><small>Yêu thích</small></a>
+                    <a asp-controller="Orders" asp-action="Index" class="nav-action"><span>▤</span><small>Đơn hàng</small></a>
+                    <a asp-controller="Cart" asp-action="Index" class="nav-action cart-action"><span>🛒<i>@cartCount</i></span><small>Giỏ hàng</small></a>
+                </div>
+            </div>
+        </nav>
+        <div class="category-bar">
+            <div class="container category-nav">
+                <div class="category-dropdown">
+                    <button class="category-trigger" type="button" data-bs-toggle="dropdown"><span>☰</span> DANH MỤC SÁCH <b>⌄</b></button>
+                    <div class="dropdown-menu category-menu">
+                        <div class="category-menu-title">Khám phá theo danh mục</div>
+                        @foreach (var category in StoreData.Categories) { <a class="dropdown-item" asp-controller="Books" asp-action="Index" asp-route-category="@category"><span>▸</span>@category</a> }
+                    </div>
+                </div>
+                <a asp-controller="Books" asp-action="Index">Sách mới</a>
+                <a asp-controller="Books" asp-action="Index" asp-route-sort="rating">Bán chạy</a>
+                <a asp-controller="Books" asp-action="Index" asp-route-sort="price-asc">Sách giảm giá</a>
+                <a asp-controller="Books" asp-action="Index" asp-route-promotion="true" class="category-hot">🔥 Sách đang khuyến mãi</a>
+            </div>
+        </div>
+    </header>
+    <main>
+        @if (TempData["Message"] is not null) { <div class="container mt-3"><div class="alert alert-success">@TempData["Message"]</div></div> }
+        @RenderBody()
+    </main>
+    <footer class="footer mt-5">
+        <div class="container footer-grid">
+            <div><a class="brand" asp-controller="Home" asp-action="Index"><span>✦</span> Lật Trang</a><p class="mt-3">Mỗi cuốn sách là một chuyến đi.</p></div>
+            <div><b>Khám phá</b><a asp-controller="Books" asp-action="Index">Tất cả sách</a><a asp-controller="Books" asp-action="Index" asp-route-sort="rating">Sách bán chạy</a><a asp-controller="Books" asp-action="Index" asp-route-promotion="true">Sách đang khuyến mãi</a></div>
+            <div><b>Hỗ trợ và Góp ý</b><a asp-controller="Support" asp-action="Feedback">Gửi góp ý</a><a asp-controller="Orders" asp-action="Index">Yêu cầu đổi trả</a></div>
+            <div><b>Liên hệ</b><p>Hotline: 1900 1234</p><p>Email: support@latrang.vn</p><p>Hỗ trợ trực tuyến mỗi ngày.</p></div>
+        </div>
+        <div class="container copyright">© 2026 Lật Trang · Website bán sách trực tuyến</div>
+    </footer>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

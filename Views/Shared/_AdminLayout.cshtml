@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Lật Trang Admin</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+</head>
+<body class="admin-shell">
+    @{
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    }
+    <aside class="admin-sidebar">
+        <a class="admin-logo" asp-controller="Admin" asp-action="Index"><span>LT</span><b>Lật Trang</b><small>QUẢN TRỊ HỆ THỐNG</small></a>
+        <nav>
+            <a class="@(currentController == "Admin" && currentAction == "Index" ? "active" : "")" asp-controller="Admin" asp-action="Index">▦ <span>Thống kê hệ thống</span></a>
+            <a class="@(currentAction == "Books" || currentAction == "CreateBook" || currentAction == "EditBook" ? "active" : "")" asp-controller="Admin" asp-action="Books">▤ <span>Quản lý sách</span></a>
+            <a class="@(currentAction == "Categories" || currentAction == "CategoryBooks" ? "active" : "")" asp-controller="Admin" asp-action="Categories">▥ <span>Danh mục sách</span></a>
+            <a class="@(currentAction == "Orders" ? "active" : "")" asp-controller="Admin" asp-action="Orders">▣ <span>Quản lý đơn hàng</span></a>
+            <a class="@(currentAction == "Returns" ? "active" : "")" asp-controller="Admin" asp-action="Returns">↩ <span>Xử lý đổi trả</span></a>
+            <a class="@(currentAction == "Feedback" ? "active" : "")" asp-controller="Admin" asp-action="Feedback">✉ <span>Góp ý khách hàng</span></a>
+            <a class="@(currentAction == "Promotions" ? "active" : "")" asp-controller="Admin" asp-action="Promotions">◇ <span>Quản lý ưu đãi</span></a>
+        </nav>
+        <div class="admin-sidebar-bottom"><form asp-controller="Account" asp-action="Logout" method="post"><button>⇥ Đăng xuất</button></form></div>
+    </aside>
+    <main class="admin-main">@if (TempData["Message"] is not null) { <div class="alert alert-success">@TempData["Message"]</div> } @RenderBody()</main>
+</body>
+</html>

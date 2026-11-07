@@ -1,0 +1,176 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using sc.Data;
+using sc.Models;
+using System.Security.Claims;
+
+namespace sc.Controllers;
+
+[Authorize(Roles = "Admin")]
+[Route("Admin")]
+public class AdminController(AppDbContext db) : Controller
+{
+    [HttpGet("")]
+    public async Task<IActionResult> Index()
+    {
+        var stats = new AdminStatisticsViewModel
+        {
+            TotalBooks = await db.Books.CountAsync(),
+            TotalStock = await db.Books.SumAsync(book => book.Stock),
+            TotalCategories = await db.Categories.CountAsync(category => category.IsActive),
+            TotalOrders = await db.Orders.CountAsync(),
+            Revenue = await db.Orders.Where(order => order.Status == "Hoàn tất").SumAsync(order => (decimal?)order.Total) ?? 0,
+            FeaturedBooks = await db.Books.OrderByDescending(book => book.Rating).Take(5).AsNoTracking().ToListAsync()
+        };
+        stats.BestSellingBook = await db.OrderItems
+            .GroupBy(item => item.BookTitle)
+            .OrderByDescending(group => group.Sum(item => item.Quantity))
+            .Select(group => group.Key)
+            .FirstOrDefaultAsync() ?? "Chưa có dữ liệu";
+        stats.BestSellingCategory = await db.OrderItems
+            .Join(db.Books, item => item.BookId, book => book.Id, (item, book) => new { book.Category, item.Quantity })
+            .GroupBy(item => item.Category)
+            .OrderByDescending(group => group.Sum(item => item.Quantity))
+            .Select(group => group.Key)
+            .FirstOrDefaultAsync() ?? "Chưa có dữ liệu";
+        return View(stats);
+    }
+
+    [HttpGet("Books")]
+    public async Task<IActionResult> Books(string? q) =>
+        View(await db.Books.Where(book => string.IsNullOrEmpty(q) || book.Title.Contains(q) || book.Id.ToString() == q).OrderByDescending(book => book.Id).ToListAsync());
+
+    [HttpGet("Books/Create")]
+    public async Task<IActionResult> CreateBook() { ViewBag.Categories = await db.Categories.Where(c => c.IsActive).ToListAsync(); return View("BookForm", new Book()); }
+
+    [HttpPost("Books/Create"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateBook(Book book) { if (!ModelState.IsValid) return View("BookForm", book); db.Books.Add(book); await db.SaveChangesAsync(); return RedirectToAction(nameof(Books)); }
+
+    [HttpGet("Books/Edit/{id}")]
+    public async Task<IActionResult> EditBook(int id) { var book = await db.Books.FindAsync(id); if (book is null) return NotFound(); ViewBag.Categories = await db.Categories.Where(c => c.IsActive).ToListAsync(); return View("BookForm", book); }
+
+    [HttpPost("Books/Edit/{id}"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditBook(int id, Book input) { var book = await db.Books.FindAsync(id); if (book is null) return NotFound(); book.Title = input.Title; book.Author = input.Author; book.Category = input.Category; book.Price = input.Price; book.DiscountPercent = input.DiscountPercent; book.DiscountAmount = input.DiscountAmount; book.Stock = input.Stock; book.CoverImage = input.CoverImage; book.Description = input.Description; await db.SaveChangesAsync(); return RedirectToAction(nameof(Books)); }
+
+    [HttpGet("Promotions")]
+    public async Task<IActionResult> Promotions(string? q, string? category)
+    {
+        var books = db.Books.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(q))
+            books = books.Where(book => book.Title.Contains(q) || book.Id.ToString() == q);
+        if (!string.IsNullOrWhiteSpace(category))
+            books = books.Where(book => book.Category == category);
+        ViewBag.Categories = await db.Categories.Where(item => item.IsActive).OrderBy(item => item.Name).ToListAsync();
+        return View(new PromotionViewModel { Query = q, Category = category, Books = await books.OrderBy(book => book.Title).ToListAsync() });
+    }
+
+    [HttpPost("Promotions/Apply"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApplyPromotion(PromotionViewModel model)
+    {
+        if (model.DiscountPercent < 0 || model.DiscountPercent > 100 || model.DiscountAmount < 0)
+        {
+            TempData["Message"] = "Giá trị giảm không hợp lệ.";
+            return RedirectToAction(nameof(Promotions), new { q = model.Query, category = model.Category });
+        }
+        var books = db.Books.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(model.Query))
+            books = books.Where(book => book.Title.Contains(model.Query) || book.Id.ToString() == model.Query);
+        if (!string.IsNullOrWhiteSpace(model.Category))
+            books = books.Where(book => book.Category == model.Category);
+        await books.ExecuteUpdateAsync(setters => setters
+            .SetProperty(book => book.DiscountPercent, model.DiscountAmount > 0 ? 0 : model.DiscountPercent)
+            .SetProperty(book => book.DiscountAmount, model.DiscountAmount));
+        TempData["Message"] = $"Đã áp dụng ưu đãi cho {await books.CountAsync()} sách.";
+        return RedirectToAction(nameof(Promotions), new { q = model.Query, category = model.Category });
+    }
+
+    [HttpPost("Promotions/Clear/{id}"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> ClearPromotion(int id)
+    {
+        await db.Books.Where(book => book.Id == id).ExecuteUpdateAsync(setters => setters.SetProperty(book => book.DiscountPercent, 0).SetProperty(book => book.DiscountAmount, 0));
+        return RedirectToAction(nameof(Promotions));
+    }
+
+    [HttpPost("Books/Delete/{id}"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteBook(int id) { var book = await db.Books.FindAsync(id); if (book is not null) { db.Books.Remove(book); await db.SaveChangesAsync(); } return RedirectToAction(nameof(Books)); }
+
+    [HttpPost("Books/Toggle/{id}"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> Toggle(int id) { var book = await db.Books.FindAsync(id); if (book is not null) { book.Stock = book.Stock == 0 ? 10 : 0; await db.SaveChangesAsync(); } return RedirectToAction(nameof(Books)); }
+
+    [HttpGet("Categories")]
+    public async Task<IActionResult> Categories()
+    {
+        var categories = await db.Categories.Where(c => StoreData.Categories.Contains(c.Name)).OrderBy(c => c.Id).ToListAsync();
+        ViewBag.BookCounts = await db.Books.GroupBy(book => book.Category)
+            .Select(group => new { Category = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.Category, item => item.Count);
+        return View(categories);
+    }
+
+    [HttpGet("Categories/{name}")]
+    public async Task<IActionResult> CategoryBooks(string name)
+    {
+        if (!StoreData.Categories.Contains(name)) return NotFound();
+        ViewBag.CategoryName = name;
+        ViewBag.SelectedBookIds = await db.Books.Where(book => book.Category == name).Select(book => book.Id).ToListAsync();
+        return View(await db.Books.Where(book => book.Title != "").OrderBy(book => book.Title).ToListAsync());
+    }
+
+    [HttpPost("Categories/{name}/Books"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateCategoryBooks(string name, int[]? selectedBookIds)
+    {
+        if (!StoreData.Categories.Contains(name)) return NotFound();
+        var selected = selectedBookIds?.ToHashSet() ?? [];
+        await db.Books.Where(book => book.Category == name)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(book => book.Category, ""));
+        if (selected.Count > 0)
+            await db.Books.Where(book => selected.Contains(book.Id))
+                .ExecuteUpdateAsync(setters => setters.SetProperty(book => book.Category, name));
+        TempData["Message"] = $"Đã cập nhật sách trong danh mục “{name}”.";
+        return RedirectToAction(nameof(CategoryBooks), new { name });
+    }
+
+    [HttpGet("Orders")]
+    public async Task<IActionResult> Orders(string? status, string? q)
+    {
+        var orders = db.Orders.Include(order => order.Items).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(status)) orders = orders.Where(order => order.Status == status);
+        if (!string.IsNullOrWhiteSpace(q))
+            orders = orders.Where(order => order.Id.ToString() == q || order.ReceiverName.Contains(q) || order.Phone.Contains(q) || order.Items.Any(item => item.BookTitle.Contains(q)));
+        ViewBag.Query = q;
+        return View(await orders.OrderByDescending(order => order.CreatedAt).ToListAsync());
+    }
+
+    [HttpPost("Orders/Status/{id}"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateOrderStatus(int id, string status, string? q) { var order = await db.Orders.FindAsync(id); if (order is not null) { order.Status = status; await db.SaveChangesAsync(); } return RedirectToAction(nameof(Orders), new { q }); }
+
+    [HttpGet("Returns")]
+    public async Task<IActionResult> Returns(string? q)
+    {
+        var requests = db.ReturnRequests.Include(item => item.Order).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(q))
+            requests = requests.Where(item => item.Id.ToString() == q || item.OrderId.ToString() == q || item.CustomerPhone.Contains(q) || item.CustomerEmail.Contains(q) || item.Order!.ReceiverName.Contains(q));
+        ViewBag.Query = q;
+        return View(await requests.OrderByDescending(item => item.CreatedAt).ToListAsync());
+    }
+
+    [HttpPost("Returns/Status/{id}"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateReturnStatus(int id, string status, string? q)
+    {
+        var request = await db.ReturnRequests.FindAsync(id);
+        if (request is not null) { request.Status = status; request.ResolvedAt = status == "Chờ xác nhận" ? null : DateTime.Now; await db.SaveChangesAsync(); }
+        return RedirectToAction(nameof(Returns), new { q });
+    }
+
+    [HttpGet("Feedback")]
+    public async Task<IActionResult> Feedback() => View(await db.CustomerFeedbacks.OrderByDescending(item => item.CreatedAt).ToListAsync());
+
+    [HttpPost("Feedback/Status/{id}"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateFeedbackStatus(int id, string status)
+    {
+        var feedback = await db.CustomerFeedbacks.FindAsync(id);
+        if (feedback is not null) { feedback.Status = status; await db.SaveChangesAsync(); }
+        return RedirectToAction(nameof(Feedback));
+    }
+}

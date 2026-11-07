@@ -1,0 +1,21 @@
+@model IEnumerable<Book>
+@{ ViewData["Title"] = "Sách trong danh mục"; var selectedIds = (IEnumerable<int>)ViewBag.SelectedBookIds; }
+<div class="admin-top"><div><span class="admin-kicker">DANH MỤC CỐ ĐỊNH</span><h1>@ViewBag.CategoryName</h1><p>Tích chọn sách muốn thuộc danh mục này, sau đó xác nhận để lưu.</p></div><a class="admin-back" asp-action="Categories">← Danh mục sách</a></div>
+<form asp-action="UpdateCategoryBooks" asp-route-name="@ViewBag.CategoryName" method="post" class="admin-panel category-books-form" onsubmit="return confirm('Bạn có chắc muốn cập nhật sách trong danh mục này? Các sách bỏ chọn sẽ được bỏ khỏi danh mục hiện tại.');">
+    <div class="category-books-toolbar"><b>@Model.Count() sách trong kho</b><button type="submit" class="admin-primary">Xác nhận thay đổi</button></div>
+    <input class="category-book-search" type="search" placeholder="Tìm theo tên hoặc mã sách..." oninput="filterCategoryBooks(this.value)" />
+    <div class="category-book-grid" id="categoryBookList">
+        @foreach (var book in Model)
+        {
+            <label class="category-book-option" data-book-search="@($"{book.Id} {book.Title} {book.Author}")"><input type="checkbox" name="selectedBookIds" value="@book.Id" checked="@selectedIds.Contains(book.Id)" /><span><b>@book.Title</b><small>Mã #{book.Id} · @book.Author · @book.Category</small></span></label>
+        }
+    </div>
+</form>
+<script>
+    function filterCategoryBooks(value) {
+        const query = value.toLowerCase().trim();
+        document.querySelectorAll("[data-book-search]").forEach(item => {
+            item.hidden = query && !item.dataset.bookSearch.toLowerCase().includes(query);
+        });
+    }
+</script>

@@ -1,0 +1,40 @@
+@{
+    ViewData["Title"] = "Trang chủ";
+    var allBooks = ViewBag.Books as List<Book> ?? StoreData.Books;
+    var featured = allBooks.Take(4).ToList();
+    var bestSellers = allBooks.OrderByDescending(b => b.Rating).Take(4).ToList();
+    var saleBooks = allBooks.Where(b => b.SalePrice < b.Price).Take(4).ToList();
+    var quotes = new[] {
+        "Một căn phòng không có sách giống như một cơ thể không có linh hồn.",
+        "Đọc sách là cách rẻ nhất để du lịch qua nhiều thế giới.",
+        "Sách mở ra trước mắt ta những chân trời mới.",
+        "Mỗi cuốn sách là một người bạn đồng hành thầm lặng.",
+        "Đọc sách hôm nay, trưởng thành hơn vào ngày mai.",
+        "Một cuốn sách hay có thể thay đổi cả cách ta nhìn cuộc sống.",
+        "Tri thức là hành trang bền vững nhất của mỗi người.",
+        "Khi đọc sách, bạn không bao giờ phải đi một mình.",
+        "Hãy đọc những điều khiến trái tim bạn rộng mở.",
+        "Trang sách nhỏ, ước mơ lớn."
+    };
+    var quote = quotes[Random.Shared.Next(quotes.Length)];
+}
+<section class="hero">
+    <div class="container hero-content">
+        <div class="hero-copy"><span class="eyebrow">MỪNG BẠN ĐẾN VỚI LẬT TRANG</span><h1>Mở sách hay,<br /><em>mở tương lai</em></h1><p>Hàng ngàn tựa sách chính hãng, giao nhanh toàn quốc. Cùng bạn xây dựng tủ sách của riêng mình.</p><div class="hero-actions"><a class="btn btn-orange" asp-controller="Books" asp-action="Index">Mua sách ngay <span>→</span></a><a class="hero-link" href="#recommended">Xem sách nổi bật</a></div></div>
+        <div class="hero-art"><div class="hero-label">Sách hay<br /><b>mỗi ngày</b></div><div class="sun"></div><div class="book-stack"><div></div><div></div><div></div></div><div class="sparkle">✦</div><div class="hero-doodle">✺</div></div>
+    </div>
+</section>
+<section class="service-strip"><div class="container"><div><span>🚚</span><b>Giao hàng toàn quốc</b><small>Nhận hàng từ 2-5 ngày</small></div><div><span>✓</span><b>Sản phẩm chính hãng</b><small>Đổi trả nếu có lỗi</small></div><div><span>↻</span><b>Đổi trả dễ dàng</b><small>Trong vòng 7 ngày</small></div><div><span>☎</span><b>Hỗ trợ tận tâm</b><small>Hotline 1900 1234</small></div></div></section>
+<section id="recommended" class="container section-block book-section">
+    <div class="section-heading"><div><span class="eyebrow">ĐƯỢC LỰA CHỌN DÀNH RIÊNG CHO BẠN</span><h2>Sách đề xuất</h2></div><a asp-controller="Books" asp-action="Index">Xem tất cả →</a></div>
+    <div class="row g-4">@foreach (var book in featured) { <partial name="_BookCard" model="book" /> }</div>
+</section>
+<section class="container section-block book-section">
+    <div class="section-heading"><div><span class="eyebrow">ĐƯỢC ĐỌC NHIỀU NHẤT</span><h2>Sách bán chạy</h2></div><a asp-controller="Books" asp-action="Index" asp-route-sort="rating">Xem tất cả →</a></div>
+    <div class="row g-4">@foreach (var book in bestSellers) { <partial name="_BookCard" model="book" /> }</div>
+</section>
+<section class="container section-block book-section">
+    <div class="section-heading"><div><span class="eyebrow">GIÁ TỐT MỖI NGÀY</span><h2>Sách đang khuyến mãi</h2></div><a asp-controller="Books" asp-action="Index" asp-route-promotion="true">Xem tất cả →</a></div>
+    <div class="row g-4">@foreach (var book in saleBooks) { <partial name="_BookCard" model="book" /> }</div>
+</section>
+<section class="quote-banner"><div class="container"><span>“</span><p>@quote</p><small>— Lật Trang</small></div></section>

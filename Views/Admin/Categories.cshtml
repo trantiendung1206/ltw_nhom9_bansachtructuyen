@@ -1,0 +1,4 @@
+@model IEnumerable<Category>
+@{ ViewData["Title"] = "Danh mục sách"; }
+<div class="admin-top"><div><span class="admin-kicker">CẤU TRÚC CỬA HÀNG</span><h1>Danh mục sách</h1><p>7 danh mục cố định. Chọn một danh mục để thêm hoặc bỏ sách.</p></div></div>
+<div class="admin-panel"><div class="fixed-category-note">Danh mục được cố định theo hệ thống và không thể xóa, ẩn hoặc hiện.</div><table class="admin-table"><thead><tr><th>Mã</th><th>Tên danh mục</th><th>Số sách</th><th>Thao tác</th></tr></thead><tbody>@foreach (var category in Model) { <tr><td>#@category.Id</td><td><b>@category.Name</b></td><td>@(((Dictionary<string, int>)ViewBag.BookCounts).GetValueOrDefault(category.Name)) sách</td><td><a class="admin-primary category-manage-link" asp-action="CategoryBooks" asp-route-name="@category.Name">Quản lý sách trong danh mục →</a></td></tr>}</tbody></table></div>

@@ -1,0 +1,4 @@
+@model CustomerFeedback
+@{ ViewData["Title"] = "Góp ý"; }
+<div class="container page-heading"><span class="eyebrow">LẮNG NGHE BẠN</span><h1>Góp ý cho Lật Trang</h1><p>Chia sẻ trải nghiệm để chúng tôi phục vụ bạn tốt hơn.</p></div>
+<div class="container support-form-wrap"><form asp-action="Feedback" method="post" class="checkout-form"><label>Chủ đề<input asp-for="Subject" required /></label><label>Nội dung góp ý<textarea asp-for="Message" rows="7" required></textarea></label><button class="btn btn-orange mt-3">Gửi góp ý</button></form></div>

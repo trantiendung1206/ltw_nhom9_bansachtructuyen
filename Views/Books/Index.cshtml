@@ -1,0 +1,29 @@
+@model List<Book>
+@{ var promotion = (bool?)ViewBag.Promotion == true; ViewData["Title"] = promotion ? "Sách đang khuyến mãi" : "Tất cả sách"; }
+<div class="container page-heading"><span class="eyebrow">GÓC SÁCH NHỎ</span><h1>@ViewData["Title"]</h1><p>@(promotion ? "Khám phá các danh mục sách đang có giá ưu đãi." : "Tìm cuốn sách phù hợp với hành trình của bạn.")</p></div>
+<div class="container catalog-layout">
+    <aside class="filter-box">
+        <form asp-action="Index" method="get" class="catalog-filter-form">
+            <input type="hidden" name="q" value="@ViewBag.Query" />
+            <input type="hidden" name="promotion" value="@promotion.ToString().ToLowerInvariant()" />
+            <div class="filter-heading"><b>@(promotion ? "Danh mục khuyến mãi" : "Lọc sản phẩm")</b><a asp-action="Index" asp-route-promotion="@promotion">Xóa lọc</a></div>
+            <div class="filter-group">
+                <span class="filter-label">Danh mục</span>
+                @foreach (var cat in StoreData.Categories)
+                {
+                    var isChecked = ((string[]?)ViewBag.Categories)?.Contains(cat) == true;
+                    <label class="filter-check"><input type="checkbox" name="category" value="@cat" checked="@isChecked" /><span class="checkmark"></span><span>@cat</span></label>
+                }
+            </div>
+            <div class="filter-group">
+                <span class="filter-label">Sắp xếp theo</span>
+                <label class="filter-check"><input type="radio" name="sort" value="new" checked="@((string?)ViewBag.Sort == "new")" /><span class="radiomark"></span><span>Mới nhất</span></label>
+                <label class="filter-check"><input type="radio" name="sort" value="rating" checked="@((string?)ViewBag.Sort == "rating")" /><span class="radiomark"></span><span>Được yêu thích</span></label>
+                <label class="filter-check"><input type="radio" name="sort" value="price-asc" checked="@((string?)ViewBag.Sort == "price-asc")" /><span class="radiomark"></span><span>Giá thấp đến cao</span></label>
+                <label class="filter-check"><input type="radio" name="sort" value="price-desc" checked="@((string?)ViewBag.Sort == "price-desc")" /><span class="radiomark"></span><span>Giá cao đến thấp</span></label>
+            </div>
+            <button type="submit" class="filter-submit">Áp dụng bộ lọc</button>
+        </form>
+    </aside>
+    <div class="flex-grow-1"><div class="catalog-toolbar"><span>@Model.Count cuốn sách</span><span>@(((string[]?)ViewBag.Categories)?.Length > 0 ? string.Join(", ", (string[])ViewBag.Categories) : "Tất cả danh mục")</span></div><div class="row g-4">@foreach (var book in Model) { <partial name="_BookCard" model="book" /> }</div>@if (Model.Count == 0) { <div class="empty-state">Không tìm thấy cuốn sách phù hợp.</div>}</div>
+</div>

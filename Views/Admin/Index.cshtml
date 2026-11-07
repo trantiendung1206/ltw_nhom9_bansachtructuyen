@@ -1,0 +1,13 @@
+@model AdminStatisticsViewModel
+@{ ViewData["Title"] = "Thống kê hệ thống"; }
+<div class="admin-top"><div><span class="admin-kicker">TỔNG QUAN VẬN HÀNH</span><h1>Thống kê hệ thống</h1><p>Các chỉ số chính của cửa hàng được cập nhật từ dữ liệu thực tế.</p></div></div>
+<div class="stats-grid">
+    <div class="stat-card"><span class="stat-icon blue">▤</span><small>Tổng số sách</small><b>@Model.TotalBooks</b><em>đầu sách trong hệ thống</em></div>
+    <div class="stat-card"><span class="stat-icon orange">▥</span><small>Tồn kho hiện tại</small><b>@Model.TotalStock</b><em>cuốn sách đang có</em></div>
+    <div class="stat-card"><span class="stat-icon purple">▦</span><small>Danh mục đang dùng</small><b>@Model.TotalCategories</b><em>nhóm sách hoạt động</em></div>
+    <div class="stat-card"><span class="stat-icon green">₫</span><small>Doanh thu hoàn tất</small><b>@Model.Revenue.ToString("N0")đ</b><em>@Model.TotalOrders đơn hàng tổng cộng</em></div>
+</div>
+<div class="admin-dashboard-grid">
+    <section class="admin-panel"><div class="panel-heading"><div><span class="admin-kicker">SẢN PHẨM</span><h2>Sách được quan tâm</h2></div><a asp-action="Books">Quản lý sách →</a></div><div class="mini-book-list">@foreach (var book in Model.FeaturedBooks) { <div><img src="@book.CoverImage" alt="" /><span><b>@book.Title</b><small>@book.Category</small></span><strong>★ @book.Rating</strong></div>}</div></section>
+    <section class="admin-panel category-highlight"><span class="admin-kicker">BÁN CHẠY NHẤT</span><h2>Sản phẩm nổi bật</h2><div class="big-highlight">★</div><b>@Model.BestSellingBook</b><p>Danh mục bán chạy: <strong>@Model.BestSellingCategory</strong></p><a asp-action="Orders">Xem đơn hàng →</a></section>
+</div>

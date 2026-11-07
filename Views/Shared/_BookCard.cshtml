@@ -1,0 +1,8 @@
+@model Book
+@{ var wishlistIds = ViewBag.WishlistBookIds as IEnumerable<int> ?? []; var isWishlisted = wishlistIds.Contains(Model.Id); }
+<div class="col-6 col-md-3">
+    <article class="book-card">
+        <a asp-controller="Books" asp-action="Details" asp-route-id="@Model.Id" class="cover-wrap"><img src="@Model.CoverImage" alt="@Model.Title" /><span class="book-badge">@(Model.DiscountPercent > 0 ? $"-{Model.DiscountPercent}%" : "Mới")</span></a>
+        <div class="book-info"><div class="stars">★ @Model.Rating <span>(128)</span></div><a class="book-title" asp-controller="Books" asp-action="Details" asp-route-id="@Model.Id">@Model.Title</a><small>@Model.Author</small><div class="price-row"><b>@Model.SalePrice.ToString("N0")đ</b>@if (Model.DiscountPercent > 0 || Model.DiscountAmount > 0) { <del>@Model.Price.ToString("N0")đ</del> }</div><div class="book-actions">@if (User.Identity?.IsAuthenticated == true) { <form asp-controller="Cart" asp-action="Add" method="post"><input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" /><button class="add-cart">+ Thêm vào giỏ</button></form><form asp-controller="Wishlist" asp-action="Add" method="post"><input type="hidden" name="bookId" value="@Model.Id" /><input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" /><button class="favorite-btn @(isWishlisted ? "is-favorite" : "")" title="Yêu thích">@(isWishlisted ? "♥" : "♡")</button></form> } else { <a class="add-cart login-buy" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@($"{Context.Request.Path}{Context.Request.QueryString}")">Đăng nhập để mua</a> }</div></div>
+    </article>
+</div>
