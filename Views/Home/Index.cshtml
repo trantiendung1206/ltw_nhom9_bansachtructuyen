@@ -20,7 +20,7 @@
 }
 <section class="hero">
     <div class="container hero-content">
-        <div class="hero-copy"><span class="eyebrow">MỪNG BẠN ĐẾN VỚI LẬT TRANG</span><h1>Mở sách hay,<br /><em>mở tương lai</em></h1><p>Hàng ngàn tựa sách chính hãng, giao nhanh toàn quốc. Cùng bạn xây dựng tủ sách của riêng mình.</p><div class="hero-actions"><a class="btn btn-orange" asp-controller="Books" asp-action="Index">Mua sách ngay <span>→</span></a><a class="hero-link" href="#recommended">Xem sách nổi bật</a></div></div>
+        <div class="hero-copy"><span class="eyebrow">MỪNG BẠN ĐẾN VỚI GROUPNINE</span><h1>Mở sách hay,<br /><em>mở tương lai</em></h1><p>Hàng ngàn tựa sách chính hãng, giao nhanh toàn quốc. Cùng bạn xây dựng tủ sách của riêng mình.</p><div class="hero-actions"><a class="btn btn-orange" asp-controller="Books" asp-action="Index">Mua sách ngay <span>→</span></a><a class="hero-link" href="#recommended">Xem sách nổi bật</a></div></div>
         <div class="hero-art"><div class="hero-label">Sách hay<br /><b>mỗi ngày</b></div><div class="sun"></div><div class="book-stack"><div></div><div></div><div></div></div><div class="sparkle">✦</div><div class="hero-doodle">✺</div></div>
     </div>
 </section>
@@ -37,4 +37,4 @@
     <div class="section-heading"><div><span class="eyebrow">GIÁ TỐT MỖI NGÀY</span><h2>Sách đang khuyến mãi</h2></div><a asp-controller="Books" asp-action="Index" asp-route-promotion="true">Xem tất cả →</a></div>
     <div class="row g-4">@foreach (var book in saleBooks) { <partial name="_BookCard" model="book" /> }</div>
 </section>
-<section class="quote-banner"><div class="container"><span>“</span><p>@quote</p><small>— Lật Trang</small></div></section>
+<section class="quote-banner"><div class="container"><span>“</span><p>@quote</p><small>— GroupNine</small></div></section>

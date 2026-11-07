@@ -1,8 +1,8 @@
-# Tài liệu tổng hợp hệ thống Lật Trang
+# Tài liệu tổng hợp hệ thống GroupNine
 
 ## 1. Bối cảnh và mục tiêu
 
-**Lật Trang** là website bán sách trực tuyến xây dựng bằng ASP.NET Core MVC
+**GroupNine** là website bán sách trực tuyến xây dựng bằng ASP.NET Core MVC
 (.NET 10), SQL Server và ASP.NET Core Identity. Hệ thống mô phỏng quy trình
 bán sách online tại Việt Nam:
 
@@ -21,9 +21,9 @@ bán sách online tại Việt Nam:
 | Đăng nhập | ASP.NET Core Identity |
 | Phân quyền | Role `Admin`, `Customer` |
 | Database | SQL Server `LatTrangBookStore` |
-| Khởi tạo dữ liệu | `Data/DbInitializer.cs` và `EnsureCreated` |
+| Khởi tạo schema | `Data/DbInitializer.cs`, `AppDbContext` và `EnsureCreated` |
+| Script tạo database | `scripts/init-database.sql` (chỉ tạo database rỗng) |
 | Giỏ hàng | Session, khóa `bookstore-cart` |
-| Database script | `scripts/init-database.sql` |
 
 Các khu vực chính trong mã nguồn:
 
@@ -62,17 +62,33 @@ Hoặc dùng:
 sqlcmd -S ".\MSSQLSERVER01" -E -i ".\scripts\init-database.sql"
 ```
 
-Script tạo database `LatTrangBookStore`. Khi ứng dụng khởi động,
-`DbInitializer` tiếp tục:
+Script chỉ tạo database rỗng `LatTrangBookStore`; script không tự tạo bảng.
+Khi ứng dụng khởi động, `DbInitializer` tiếp tục:
 
-1. Tạo bảng Identity.
-2. Tạo bảng sách, danh mục, đơn hàng, chi tiết đơn hàng, trả hàng
-   và góp ý.
-3. Bổ sung các cột schema còn thiếu nếu database đã tồn tại từ phiên bản cũ.
-4. Chuẩn hóa trạng thái đơn hàng và hình thức giao hàng.
-5. Seed 7 danh mục cố định và khoảng 30 sách mẫu.
+1. Dùng `EnsureCreated` để tạo schema Identity và schema nghiệp vụ từ
+   `AppDbContext`.
+2. Tạo/bổ sung các bảng và cột nghiệp vụ còn thiếu nếu database đã tồn tại từ
+   phiên bản cũ.
+3. Chuẩn hóa trạng thái đơn hàng và hình thức giao hàng.
+4. Xóa bảng `Wishlists` cũ nếu bảng này còn tồn tại; giỏ hàng hiện chỉ dùng
+   Session, không lưu trong database.
+5. Seed 7 danh mục cố định và 33 sách mẫu.
 6. Tạo role `Admin`, `Customer`.
-7. Tạo các tài khoản demo.
+7. Tạo 4 tài khoản Admin và 4 tài khoản Customer demo.
+
+Sau khi chạy ứng dụng lần đầu, có thể kiểm tra schema bằng:
+
+```sql
+USE [LatTrangBookStore];
+SELECT [name]
+FROM sys.tables
+WHERE [name] IN (
+    N'Books', N'Categories', N'Orders', N'OrderItems',
+    N'OrderStatusHistories', N'ReturnRequests', N'CustomerFeedbacks',
+    N'AspNetUsers', N'AspNetRoles'
+)
+ORDER BY [name];
+```
 
 Nếu dùng SQL Server instance khác, sửa `ConnectionStrings:DefaultConnection`
 trong `appsettings.json`, ví dụ:
@@ -129,7 +145,7 @@ trình vẫn kiểm tra schema và seed dữ liệu cần thiết.
 
 Trang chủ hiển thị:
 
-- Logo và tên thương hiệu Lật Trang.
+- Logo và tên thương hiệu GroupNine.
 - Ô tìm kiếm.
 - Liên kết giỏ hàng, đơn hàng và tài khoản.
 - Thanh danh mục sách.
@@ -417,22 +433,38 @@ Khách nhập góp ý
 
 ## 8. Database và dữ liệu
 
-Các bảng nghiệp vụ chính:
+### 8.1. Bảng và quan hệ
 
-- `AspNetUsers`, `AspNetRoles` và các bảng Identity.
-- `Books`.
-- `Categories`.
-- `Orders`.
-- `OrderItems`.
-- `ReturnRequests`.
-- `CustomerFeedbacks`.
+Database gồm các bảng Identity mặc định của ASP.NET Core Identity và các bảng
+nghiệp vụ sau:
+
+| Bảng | Cột chính | Quan hệ/chức năng |
+|---|---|---|
+| `Books` | `Id`, `Title`, `Author`, `Category`, `Price`, `DiscountPercent`, `DiscountAmount`, `Stock`, `Rating`, `CoverImage`, `Description` | Danh mục sách và tồn kho; `Price`, `DiscountAmount` dùng `decimal(18,2)` |
+| `Categories` | `Id`, `Name`, `IsActive` | 7 danh mục hệ thống; không có CRUD danh mục trên Admin |
+| `Orders` | `Id`, `UserId`, `ReceiverName`, `Phone`, `Address`, `DeliveryMethod`, `Status`, `CancellationReason`, `Total`, `CreatedAt` | Đơn hàng; `UserId` có thể rỗng; giao hàng chỉ dùng `Ship` |
+| `OrderItems` | `Id`, `OrderId`, `BookId`, `BookTitle`, `Quantity`, `UnitPrice` | Các dòng trong đơn; `OrderId` xóa dây chuyền theo `Orders` |
+| `OrderStatusHistories` | `Id`, `OrderId`, `OccurredAt`, `Action` | Lịch sử trạng thái; `OrderId` xóa dây chuyền theo `Orders` |
+| `ReturnRequests` | `Id`, `OrderId`, `UserId`, `CustomerEmail`, `CustomerPhone`, `RequestType`, `Reason`, `Status`, `CreatedAt`, `ResolvedAt` | Yêu cầu hoàn tiền; `OrderId` xóa dây chuyền theo `Orders` |
+| `CustomerFeedbacks` | `Id`, `UserId`, `CustomerEmail`, `Subject`, `Message`, `Status`, `CreatedAt` | Góp ý của khách hàng |
+
+Identity tạo các bảng `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles`,
+`AspNetUserClaims`, `AspNetUserLogins`, `AspNetUserTokens` và
+`AspNetRoleClaims`. `AppUser` bổ sung `FullName` và `Address` cho
+`AspNetUsers`.
+
+Không có bảng `Wishlists` trong thiết kế hiện tại. Nếu database cũ còn bảng
+này, `DbInitializer` sẽ xóa bảng khi ứng dụng khởi động.
+
+### 8.2. Dữ liệu mẫu
 
 Các dữ liệu mẫu được tạo tự động:
 
 - 7 danh mục cố định.
-- Khoảng 30 sách mẫu.
+- 33 sách mẫu từ `StoreData.Books`; nếu database đã có sách, chỉ bổ sung sách
+  chưa tồn tại theo tên.
 - Role `Admin`, `Customer`.
-- 3 tài khoản Admin và 3 tài khoản khách hàng mẫu.
+- 4 tài khoản Admin và 4 tài khoản khách hàng mẫu.
 
 ### Tài khoản demo
 
@@ -441,9 +473,11 @@ Các dữ liệu mẫu được tạo tự động:
 | Admin | `admin1@gmail.com` | `12345678` |
 | Admin | `admin2@gmail.com` | `12345678` |
 | Admin | `admin3@gmail.com` | `12345678` |
+| Admin | `admin@latrang.vn` | `Admin123!` |
 | Customer | `khachhangmau1@gmail.com` | `12345678` |
 | Customer | `khachhangmau2@gmail.com` | `12345678` |
 | Customer | `khachhangmau3@gmail.com` | `12345678` |
+| Customer | `customer@latrang.vn` | `Customer123!` |
 
 ## 9. Lưu ý vận hành
 

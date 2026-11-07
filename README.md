@@ -1,4 +1,4 @@
-# Lật Trang - Website bán sách
+# GroupNine - Website bán sách
 
 Website bán sách trực tuyến xây dựng bằng ASP.NET Core MVC và SQL Server.
 
@@ -80,7 +80,7 @@ dotnet run
 
 ## Đã triển khai
 
-- Trang chủ theo nhận diện Lật Trang, banner, danh mục và sách mới.
+- Trang chủ theo nhận diện GroupNine, banner, danh mục và sách mới.
 - Danh sách sách với tìm kiếm, lọc danh mục và sắp xếp theo giá/đánh giá.
 - Trang chi tiết sách, giá khuyến mãi, tồn kho và đánh giá sao.
 - Giỏ hàng lưu bằng Session, cập nhật số lượng và xóa sản phẩm.
@@ -91,7 +91,11 @@ dotnet run
 
 ## Database và tài khoản demo
 
-Ứng dụng hiện dùng SQL Server + Entity Framework Core. Database `LatTrangBookStore` được tạo trên instance `.\\MSSQLSERVER01`; khi chạy lần đầu, ứng dụng tạo bảng Identity, seed sách và tạo role `Admin`/`Customer`.
+Ứng dụng hiện dùng SQL Server + Entity Framework Core. Script
+`scripts/init-database.sql` chỉ tạo database rỗng `LatTrangBookStore` trên
+instance `.\\MSSQLSERVER01`; khi chạy lần đầu, `DbInitializer` dùng
+`EnsureCreated` để tạo bảng Identity/nghiệp vụ, cập nhật schema và seed sách,
+role `Admin`/`Customer`.
 
 - Admin: `admin@latrang.vn` / `Admin123!`
 - Customer: `customer@latrang.vn` / `Customer123!`

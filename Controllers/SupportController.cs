@@ -51,7 +51,7 @@ public class SupportController(AppDbContext db, UserManager<AppUser> userManager
         model.CustomerEmail = (await userManager.FindByIdAsync(model.UserId))?.Email ?? "";
         db.CustomerFeedbacks.Add(model);
         await db.SaveChangesAsync();
-        TempData["Message"] = "Cảm ơn góp ý của bạn. Lật Trang sẽ phản hồi sớm.";
+        TempData["Message"] = "Cảm ơn góp ý của bạn. GroupNine sẽ phản hồi sớm.";
         return RedirectToAction("Index", "Home");
     }
 }

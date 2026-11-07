@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"] - Lật Trang Admin</title>
+    <title>@ViewData["Title"] - GroupNine Admin</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
 </head>
@@ -13,7 +13,7 @@
         var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     }
     <aside class="admin-sidebar">
-        <a class="admin-logo" asp-controller="Admin" asp-action="Index"><span>LT</span><b>Lật Trang</b><small>QUẢN TRỊ HỆ THỐNG</small></a>
+        <a class="admin-logo" asp-controller="Admin" asp-action="Index"><span>GN</span><b>GroupNine</b><small>QUẢN TRỊ HỆ THỐNG</small></a>
         <nav>
             <a class="@(currentController == "Admin" && currentAction == "Index" ? "active" : "")" asp-controller="Admin" asp-action="Index">▦ <span>Thống kê hệ thống</span></a>
             <a class="@(currentAction == "Books" || currentAction == "CreateBook" || currentAction == "EditBook" ? "active" : "")" asp-controller="Admin" asp-action="Books">▤ <span>Quản lý sách</span></a>

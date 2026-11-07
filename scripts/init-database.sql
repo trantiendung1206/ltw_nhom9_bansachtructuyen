@@ -1,8 +1,13 @@
 /*
-    Lật Trang - khởi tạo SQL Server
-    Chạy bằng SQL Server Management Studio với tài khoản có quyền tạo database.
-    Sau đó chạy ứng dụng; DbInitializer sẽ tạo schema Identity, sách, đơn hàng,
-    wishlist, đổi trả, góp ý và dữ liệu mẫu bằng EnsureCreated.
+    GroupNine - khởi tạo database SQL Server
+
+    Script này chỉ tạo database rỗng. Schema không được khai báo thủ công ở đây:
+    ứng dụng ASP.NET Core sẽ gọi DbInitializer khi khởi động để chạy
+    EnsureCreated, tạo các bảng Identity/nghiệp vụ, cập nhật schema cũ và seed
+    dữ liệu mẫu. Giữ cách này đồng bộ với AppDbContext và mã khởi tạo hiện tại.
+
+    Chạy bằng SQL Server Management Studio hoặc sqlcmd với tài khoản có quyền
+    tạo database.
 */
 
 IF DB_ID(N'LatTrangBookStore') IS NULL
@@ -16,5 +21,5 @@ GO
 
 SELECT
     DB_NAME() AS [DatabaseName],
-    N'Đã sẵn sàng cho ứng dụng ASP.NET Core' AS [Status];
+    N'Đã tạo database; chạy ứng dụng để tạo schema và dữ liệu mẫu' AS [Status];
 GO
