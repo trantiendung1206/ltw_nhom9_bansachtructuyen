@@ -3,7 +3,7 @@
 ## 1. Bối cảnh và mục tiêu
 
 **Lật Trang** là website bán sách trực tuyến xây dựng bằng ASP.NET Core MVC
-(.NET 8), SQL Server và ASP.NET Core Identity. Hệ thống mô phỏng quy trình
+(.NET 10), SQL Server và ASP.NET Core Identity. Hệ thống mô phỏng quy trình
 bán sách online tại Việt Nam:
 
 - Khách hàng xem, tìm kiếm, lọc và mua sách.
@@ -17,7 +17,7 @@ bán sách online tại Việt Nam:
 | Thành phần | Công nghệ/chức năng |
 |---|---|
 | Giao diện | Razor View, HTML, CSS, Bootstrap |
-| Backend | ASP.NET Core MVC .NET 8 |
+| Backend | ASP.NET Core MVC .NET 10 |
 | Đăng nhập | ASP.NET Core Identity |
 | Phân quyền | Role `Admin`, `Customer` |
 | Database | SQL Server `LatTrangBookStore` |
@@ -40,7 +40,7 @@ Các khu vực chính trong mã nguồn:
 Cần cài:
 
 1. Windows 10/11.
-2. .NET 8 SDK.
+2. .NET 10 SDK.
 3. SQL Server Express/Developer.
 4. SQL Server Management Studio hoặc `sqlcmd`.
 5. Git.
@@ -474,4 +474,3 @@ Các dữ liệu mẫu được tạo tự động:
   Windows Authentication.
 - Nếu file `sc.exe` bị khóa khi build, dừng tiến trình website cũ rồi build lại.
 - Database hiện dùng `EnsureCreated`, không dùng migration EF Core.
-

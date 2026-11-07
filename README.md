@@ -5,7 +5,7 @@ Website bán sách trực tuyến xây dựng bằng ASP.NET Core MVC và SQL Se
 ## Yêu cầu môi trường
 
 - Windows 10/11.
-- .NET 8 SDK: `https://dotnet.microsoft.com/download/dotnet/8.0`.
+- .NET 10 SDK: `https://dotnet.microsoft.com/download/dotnet/10.0`.
 - SQL Server Express/Developer và SQL Server Management Studio (hoặc `sqlcmd`).
 - Git.
 
