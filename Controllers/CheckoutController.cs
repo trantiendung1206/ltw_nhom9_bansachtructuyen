@@ -61,7 +61,7 @@ public class CheckoutController(AppDbContext db) : Controller
         await db.SaveChangesAsync();
         await transaction.CommitAsync();
         HttpContext.Session.Remove("bookstore-cart");
-        ViewBag.OrderCode = $"LP{DateTime.Now:MMddHHmmss}";
+        ViewBag.OrderCode = order.Id.ToString("D8");
         return View("Success");
     }
 

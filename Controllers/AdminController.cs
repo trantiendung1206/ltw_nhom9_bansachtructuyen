@@ -196,8 +196,15 @@ public class AdminController(AppDbContext db) : Controller
     public async Task<IActionResult> Orders(string? q)
     {
         var orders = db.Orders.Include(order => order.Items).AsQueryable();
-        if (!string.IsNullOrWhiteSpace(q))
-            orders = orders.Where(order => order.Id.ToString() == q || order.ReceiverName.Contains(q) || order.Phone.Contains(q) || order.Items.Any(item => item.BookTitle.Contains(q)));
+        var search = q?.Trim();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var orderCode = search.TrimStart('#');
+            if (int.TryParse(orderCode, out var orderId))
+                orders = orders.Where(order => order.Id == orderId || order.ReceiverName.Contains(search) || order.Phone.Contains(search) || order.Items.Any(item => item.BookTitle.Contains(search)));
+            else
+                orders = orders.Where(order => order.ReceiverName.Contains(search) || order.Phone.Contains(search) || order.Items.Any(item => item.BookTitle.Contains(search)));
+        }
         ViewBag.Query = q;
         return View(await orders.OrderByDescending(order => order.CreatedAt).ToListAsync());
     }
@@ -237,7 +244,7 @@ public class AdminController(AppDbContext db) : Controller
     {
         var order = await db.Orders.FindAsync(id);
         if (order is null) return NotFound();
-        if (order.Status != "Hoàn tất" && !string.IsNullOrWhiteSpace(reason))
+        if (order.Status != "Hoàn tất" && order.Status != "Đã trả hàng" && !string.IsNullOrWhiteSpace(reason))
         {
             order.Status = "Đã hủy";
             order.CancellationReason = reason;
@@ -250,9 +257,19 @@ public class AdminController(AppDbContext db) : Controller
     [HttpGet("Returns")]
     public async Task<IActionResult> Returns(string? q)
     {
-        var requests = db.ReturnRequests.Include(item => item.Order).AsQueryable();
-        if (!string.IsNullOrWhiteSpace(q))
-            requests = requests.Where(item => item.Id.ToString() == q || item.OrderId.ToString() == q || item.CustomerPhone.Contains(q) || item.CustomerEmail.Contains(q) || item.Order!.ReceiverName.Contains(q));
+        var requests = db.ReturnRequests
+            .Include(item => item.Order)
+            .ThenInclude(order => order!.Items)
+            .AsQueryable();
+        var search = q?.Trim();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var code = search.TrimStart('#');
+            if (int.TryParse(code, out var id))
+                requests = requests.Where(item => item.Id == id || item.OrderId == id || item.CustomerPhone.Contains(search) || item.CustomerEmail.Contains(search) || item.Order!.ReceiverName.Contains(search) || item.Order.Items.Any(orderItem => orderItem.BookTitle.Contains(search)));
+            else
+                requests = requests.Where(item => item.CustomerPhone.Contains(search) || item.CustomerEmail.Contains(search) || item.Order!.ReceiverName.Contains(search) || item.Order.Items.Any(orderItem => orderItem.BookTitle.Contains(search)));
+        }
         ViewBag.Query = q;
         return View(await requests.OrderByDescending(item => item.CreatedAt).ToListAsync());
     }
@@ -278,9 +295,15 @@ public class AdminController(AppDbContext db) : Controller
             foreach (var item in request.Order.Items)
                 books[item.BookId].Stock += item.Quantity;
             request.Order.RefundedAmount = request.Order.Total;
+            request.Order.Status = "Đã trả hàng";
             request.Status = "Chấp nhận yêu cầu trả hàng";
             request.RejectionReason = "";
             request.ResolvedAt = DateTime.Now;
+            db.OrderStatusHistories.Add(new OrderStatusHistory
+            {
+                OrderId = request.Order.Id,
+                Action = "Hàng đã trả về"
+            });
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
             TempData["Message"] = $"Đã chấp nhận yêu cầu #{request.Id:D8}, hoàn tiền và cộng lại tồn kho.";
