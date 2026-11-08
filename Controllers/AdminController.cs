@@ -193,9 +193,12 @@ public class AdminController(AppDbContext db) : Controller
     }
 
     [HttpGet("Orders")]
-    public async Task<IActionResult> Orders(string? q)
+    public async Task<IActionResult> Orders(string? q, string? status)
     {
         var orders = db.Orders.Include(order => order.Items).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(status))
+            orders = orders.Where(order => order.Status == status);
+
         var search = q?.Trim();
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -206,6 +209,7 @@ public class AdminController(AppDbContext db) : Controller
                 orders = orders.Where(order => order.ReceiverName.Contains(search) || order.Phone.Contains(search) || order.Items.Any(item => item.BookTitle.Contains(search)));
         }
         ViewBag.Query = q;
+        ViewBag.Status = status;
         return View(await orders.OrderByDescending(order => order.CreatedAt).ToListAsync());
     }
 
@@ -265,10 +269,9 @@ public class AdminController(AppDbContext db) : Controller
         if (!string.IsNullOrWhiteSpace(search))
         {
             var code = search.TrimStart('#');
-            if (int.TryParse(code, out var id))
-                requests = requests.Where(item => item.Id == id || item.OrderId == id || item.CustomerPhone.Contains(search) || item.CustomerEmail.Contains(search) || item.Order!.ReceiverName.Contains(search) || item.Order.Items.Any(orderItem => orderItem.BookTitle.Contains(search)));
-            else
-                requests = requests.Where(item => item.CustomerPhone.Contains(search) || item.CustomerEmail.Contains(search) || item.Order!.ReceiverName.Contains(search) || item.Order.Items.Any(orderItem => orderItem.BookTitle.Contains(search)));
+            requests = int.TryParse(code, out var orderId)
+                ? requests.Where(item => item.OrderId == orderId)
+                : requests.Where(item => false);
         }
         ViewBag.Query = q;
         return View(await requests.OrderByDescending(item => item.CreatedAt).ToListAsync());
@@ -306,7 +309,7 @@ public class AdminController(AppDbContext db) : Controller
             });
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
-            TempData["Message"] = $"Đã chấp nhận yêu cầu #{request.Id:D8}, hoàn tiền và cộng lại tồn kho.";
+            TempData["Message"] = "Đã chấp nhận yêu cầu trả hàng, hoàn tiền và cộng lại tồn kho.";
         }
         return RedirectToAction(nameof(Returns), new { q });
     }
@@ -327,7 +330,7 @@ public class AdminController(AppDbContext db) : Controller
             request.RejectionReason = reason.Trim();
             request.ResolvedAt = DateTime.Now;
             await db.SaveChangesAsync();
-            TempData["Message"] = $"Đã từ chối yêu cầu #{request.Id:D8}.";
+            TempData["Message"] = "Đã từ chối yêu cầu trả hàng.";
         }
         return RedirectToAction(nameof(Returns), new { q });
     }
