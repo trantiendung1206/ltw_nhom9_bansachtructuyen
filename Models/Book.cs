@@ -36,6 +36,7 @@ public sealed class Order
     public string CancellationReason { get; set; } = "";
     public decimal Total { get; set; }
     public decimal RefundedAmount { get; set; }
+    public DateTime? CompletedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public List<OrderItem> Items { get; set; } = [];
 }
@@ -48,6 +49,16 @@ public sealed class OrderItem
     public string BookTitle { get; set; } = "";
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
+}
+
+public sealed class BookReview
+{
+    public int Id { get; set; }
+    public int BookId { get; set; }
+    public int OrderId { get; set; }
+    public string UserId { get; set; } = "";
+    public int Rating { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 }
 
 public sealed class OrderStatusHistory

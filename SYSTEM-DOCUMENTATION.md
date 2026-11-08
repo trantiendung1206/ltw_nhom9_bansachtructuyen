@@ -10,7 +10,9 @@ bán sách online tại Việt Nam:
 - Khách hàng quản lý giỏ hàng, đơn hàng, trả hàng và góp ý.
 - Nhân viên/quản trị viên quản lý sách, kho, danh mục, khuyến mãi, đơn hàng,
   trả hàng và góp ý.
-- Không hỗ trợ nghiệp vụ nhận hàng tại cửa hàng; mọi đơn hàng đều giao tận nơi.
+- Hệ thống không tích hợp cổng thanh toán và không lưu phí vận chuyển. Nhân
+  viên dùng thông tin đơn để đặt COD qua be/Grab bên ngoài; khách trả tiền hàng
+  và phí giao hàng cho shipper. Đây là quy trình ngoài hệ thống.
 
 ## 2. Công nghệ và cấu trúc chính
 
@@ -65,16 +67,14 @@ sqlcmd -S ".\MSSQLSERVER01" -E -i ".\scripts\init-database.sql"
 Script chỉ tạo database rỗng `LatTrangBookStore`; script không tự tạo bảng.
 Khi ứng dụng khởi động, `DbInitializer` tiếp tục:
 
-1. Dùng `EnsureCreated` để tạo schema Identity và schema nghiệp vụ từ
+1. Dùng `EnsureCreated` theo chủ đích để tạo schema Identity và schema nghiệp vụ từ
    `AppDbContext`.
 2. Tạo/bổ sung các bảng và cột nghiệp vụ còn thiếu nếu database đã tồn tại từ
    phiên bản cũ.
 3. Chuẩn hóa trạng thái đơn hàng.
-4. Xóa bảng `Wishlists` cũ nếu bảng này còn tồn tại; giỏ hàng hiện chỉ dùng
-   Session, không lưu trong database.
-5. Seed 7 danh mục cố định và 33 sách mẫu.
-6. Tạo role `Admin`, `Customer`.
-7. Tạo 4 tài khoản Admin và 4 tài khoản Customer demo.
+4. Seed 7 danh mục cố định và 33 sách mẫu.
+5. Tạo role `Admin`, `Customer`.
+6. Tạo 4 tài khoản Admin và 4 tài khoản Customer demo.
 
 Sau khi chạy ứng dụng lần đầu, có thể kiểm tra schema bằng:
 
@@ -152,10 +152,6 @@ Trang chủ hiển thị:
 - Sách nổi bật, sách bán chạy, sách mới và sách đang khuyến mãi.
 - Trích dẫn cuối trang được chọn ngẫu nhiên từ khoảng 10 câu mỗi lần tải.
 - Khu vực “Hỗ trợ và Góp ý”.
-
-Các khu vực đã bỏ theo yêu cầu: combo tiết kiệm, văn phòng phẩm, góc đọc
-sách, danh mục nổi bật, ưu đãi trong tuần, đăng ký nhận tin và chính sách
-giao hàng.
 
 ### 5.2. Danh sách sách và bộ lọc
 
@@ -245,7 +241,8 @@ Nút **Đặt hàng**:
 1. Kiểm tra giỏ hàng và tồn kho.
 2. Tạo đơn hàng trạng thái `Cần xác nhận`.
 3. Tạo các dòng chi tiết đơn hàng.
-4. Trừ tồn kho trong transaction.
+4. Trong transaction, kiểm tra lại tồn kho ngay lúc đặt và trừ số lượng; transaction
+   giúp các thao tác tạo đơn và trừ kho thành công hoặc thất bại cùng nhau.
 5. Xóa giỏ hàng sau khi lưu thành công.
 6. Hiển thị mã đơn hàng.
 
@@ -271,13 +268,18 @@ Trạng thái đơn:
 4. `Đang vận chuyển`
 5. `Hoàn tất`
 6. `Đã hủy`
+7. `Đã trả hàng`
 
 ### 5.8. Trả hàng
 
 Khách mở **Chi tiết đơn hàng** và chỉ thấy nút **Yêu cầu trả hàng** với đơn
-`Hoàn tất` trong vòng 7 ngày. Chỉ hỗ trợ hoàn tiền. Khách nhập lý do và gửi
-yêu cầu `Chờ xác nhận`; nhân viên xác nhận để chuyển thành
-`Chấp nhận yêu cầu trả hàng`.
+`Hoàn tất` trong vòng 7 ngày tính từ `CompletedAt` (thời điểm nhân viên xác
+nhận hoàn tất). Chỉ hỗ trợ hoàn tiền toàn bộ đơn, không hoàn từng phần. Khi
+chấp nhận, đơn chuyển `Đã trả hàng`, hoàn lại toàn bộ `Total` và cộng lại tồn
+kho.
+
+Sau khi đơn `Hoàn tất`, khách có thể đánh giá từng sách từ 1 đến 5 sao. Đánh
+giá chỉ được lưu cho sách thuộc đơn của chính khách.
 
 ### 5.9. Góp ý
 
@@ -300,7 +302,7 @@ Trang `/Admin` hiển thị:
 - Tổng số lượng tồn kho.
 - Tổng danh mục.
 - Tổng số đơn hàng.
-- Doanh thu từ đơn `Hoàn tất`.
+- Doanh thu từ đơn `Hoàn tất`, tính bằng `Total - RefundedAmount`.
 - Sách bán chạy nhất.
 - Danh mục bán chạy nhất.
 - Các sách có đánh giá cao.
@@ -368,7 +370,10 @@ mục để mở danh sách sách.
 - **Chi tiết đơn hàng** mở thông tin khách, sản phẩm, địa chỉ và lịch trình.
 - Các nút xử lý theo đúng thứ tự: xác nhận đơn, đóng gói, đang vận chuyển,
   hoàn tất; không thể chuyển ngược trạng thái.
-- Nút hủy yêu cầu nhập lý do và chỉ hoạt động trước khi đơn hoàn tất.
+- Nút hủy yêu cầu nhập lý do, hoàn lại toàn bộ số lượng sách vào tồn kho và
+  chỉ hoạt động trước khi đơn hoàn tất.
+- Việc hủy đơn cũng dùng transaction để cập nhật trạng thái và hoàn tồn kho
+  cùng nhau.
 
 ### 6.6. Quản lý trả hàng
 
@@ -379,7 +384,7 @@ mục để mở danh sách sách.
 - Xem lý do, thời gian và trạng thái yêu cầu hoàn tiền.
 - Xem trực tiếp email và số điện thoại khách để liên hệ.
 - **Chấp nhận**: chuyển `Chờ xác nhận` thành `Chấp nhận yêu cầu trả hàng`,
-  hoàn tiền bằng tổng đơn, trừ khoản hoàn khỏi doanh thu và cộng lại số lượng
+  hoàn tiền toàn bộ đơn, trừ khoản hoàn khỏi doanh thu và cộng lại số lượng
   từng sách vào tồn kho trong cùng một transaction.
 - **Không chấp nhận**: bắt buộc nhập lý do, chuyển thành `Từ chối yêu cầu trả
   hàng` và hiển thị lý do cho khách hàng.
@@ -456,8 +461,9 @@ nghiệp vụ sau:
 |---|---|---|
 | `Books` | `Id`, `Title`, `Author`, `Category`, `Price`, `DiscountPercent`, `DiscountAmount`, `Stock`, `Rating`, `CoverImage`, `Description` | Danh mục sách và tồn kho; `Price`, `DiscountAmount` dùng `decimal(18,2)` |
 | `Categories` | `Id`, `Name`, `IsActive` | 7 danh mục hệ thống; không có CRUD danh mục trên Admin |
-| `Orders` | `Id`, `UserId`, `ReceiverName`, `Phone`, `Address`, `Status`, `CancellationReason`, `Total`, `RefundedAmount`, `CreatedAt` | Đơn hàng và thông tin để nhân viên đặt giao hàng bên ngoài; `UserId` có thể rỗng; `Total` chỉ là tiền hàng; `RefundedAmount` dùng để trừ doanh thu khi hoàn hàng |
+| `Orders` | `Id`, `UserId`, `ReceiverName`, `Phone`, `Address`, `Status`, `CancellationReason`, `Total`, `RefundedAmount`, `CompletedAt`, `CreatedAt` | Đơn hàng và thông tin để nhân viên đặt giao hàng bên ngoài; `UserId` có thể rỗng; `Total` chỉ là tiền hàng; `RefundedAmount` luôn là toàn bộ đơn khi hoàn tiền |
 | `OrderItems` | `Id`, `OrderId`, `BookId`, `BookTitle`, `Quantity`, `UnitPrice` | Các dòng trong đơn; `OrderId` xóa dây chuyền theo `Orders` |
+| `BookReviews` | `Id`, `BookId`, `OrderId`, `UserId`, `Rating`, `CreatedAt` | Đánh giá 1–5 sao của khách cho sách trong đơn đã hoàn tất; mỗi khách chỉ đánh giá một lần cho mỗi sách trong một đơn |
 | `OrderStatusHistories` | `Id`, `OrderId`, `OccurredAt`, `Action` | Lịch sử trạng thái; `OrderId` xóa dây chuyền theo `Orders` |
 | `ReturnRequests` | `Id`, `OrderId`, `UserId`, `CustomerEmail`, `CustomerPhone`, `RequestType`, `Reason`, `Status`, `RejectionReason`, `CreatedAt`, `ResolvedAt` | Yêu cầu hoàn tiền hoặc từ chối; `OrderId` xóa dây chuyền theo `Orders` |
 | `CustomerFeedbacks` | `Id`, `UserId`, `CustomerEmail`, `Subject`, `Message`, `Status`, `CreatedAt` | Góp ý của khách hàng |
@@ -466,9 +472,6 @@ Identity tạo các bảng `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles`,
 `AspNetUserClaims`, `AspNetUserLogins`, `AspNetUserTokens` và
 `AspNetRoleClaims`. `AppUser` bổ sung `FullName` và `Address` cho
 `AspNetUsers`.
-
-Không có bảng `Wishlists` trong thiết kế hiện tại. Nếu database cũ còn bảng
-này, `DbInitializer` sẽ xóa bảng khi ứng dụng khởi động.
 
 ### 8.2. Dữ liệu mẫu
 
@@ -501,4 +504,7 @@ Các dữ liệu mẫu được tạo tự động:
 - Nếu SQL Server không kết nối được, kiểm tra service, tên instance và quyền
   Windows Authentication.
 - Nếu file `sc.exe` bị khóa khi build, dừng tiến trình website cũ rồi build lại.
-- Database hiện dùng `EnsureCreated`, không dùng migration EF Core.
+- Database dùng `EnsureCreated` và các đoạn SQL bổ sung có kiểm tra để đồng bộ
+  schema cũ, thay vì Migration EF Core. Đây là lựa chọn có chủ đích để triển
+  khai đơn giản cho đồ án; hệ quả là thay đổi schema cần được viết thủ công,
+  không có lịch sử migration tự động và cần sao lưu database trước khi chạy.

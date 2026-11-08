@@ -88,6 +88,7 @@ dotnet run
   Nhân viên dùng thông tin này để đặt COD qua đơn vị giao hàng bên ngoài; phí
   giao hàng do khách thanh toán trực tiếp cho shipper và không thuộc hệ thống.
 - Trừ tồn kho sau khi đặt hàng và thông báo mã đơn hàng; trạng thái ban đầu là `Cần xác nhận`.
+- Khách có thể đánh giá từng sách từ 1 đến 5 sao sau khi đơn hoàn tất.
 - Dashboard quản lý mẫu với thống kê và bảng quản lý tồn kho.
 - Responsive mobile, Bootstrap 5 và nhóm font sans-serif phổ biến (Arial/Roboto/Helvetica/Tahoma).
 

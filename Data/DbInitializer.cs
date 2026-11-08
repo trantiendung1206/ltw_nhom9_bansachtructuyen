@@ -23,6 +23,8 @@ public static class DbInitializer
             CREATE TABLE [dbo].[ReturnRequests] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [OrderId] int NOT NULL, [UserId] nvarchar(450) NOT NULL, [RequestType] nvarchar(30) NOT NULL, [Reason] nvarchar(1000) NOT NULL, [Status] nvarchar(50) NOT NULL, [RejectionReason] nvarchar(1000) NOT NULL CONSTRAINT [DF_ReturnRequests_RejectionReason] DEFAULT N'', [CreatedAt] datetime2 NOT NULL, [ResolvedAt] datetime2 NULL, CONSTRAINT [FK_ReturnRequests_Orders] FOREIGN KEY ([OrderId]) REFERENCES [dbo].[Orders]([Id]) ON DELETE CASCADE);
             IF OBJECT_ID(N'dbo.CustomerFeedbacks', N'U') IS NULL
             CREATE TABLE [dbo].[CustomerFeedbacks] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [UserId] nvarchar(450) NOT NULL, [Subject] nvarchar(200) NOT NULL, [Message] nvarchar(2000) NOT NULL, [CustomerEmail] nvarchar(256) NOT NULL CONSTRAINT [DF_CustomerFeedbacks_CustomerEmail] DEFAULT N'', [Status] nvarchar(50) NOT NULL, [CreatedAt] datetime2 NOT NULL);
+            IF OBJECT_ID(N'dbo.BookReviews', N'U') IS NULL
+            CREATE TABLE [dbo].[BookReviews] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [BookId] int NOT NULL, [OrderId] int NOT NULL, [UserId] nvarchar(450) NOT NULL, [Rating] int NOT NULL, [CreatedAt] datetime2 NOT NULL, CONSTRAINT [UQ_BookReviews_Book_Order_User] UNIQUE ([BookId], [OrderId], [UserId]), CONSTRAINT [FK_BookReviews_Books] FOREIGN KEY ([BookId]) REFERENCES [dbo].[Books]([Id]) ON DELETE CASCADE, CONSTRAINT [FK_BookReviews_Orders] FOREIGN KEY ([OrderId]) REFERENCES [dbo].[Orders]([Id]) ON DELETE CASCADE);
             """);
         await db.Database.ExecuteSqlRawAsync("""
             UPDATE [dbo].[Orders] SET [Status] = N'Cần xác nhận' WHERE [Status] IN (N'Mới', N'Đang xử lý');
@@ -44,6 +46,8 @@ public static class DbInitializer
                 ALTER TABLE [dbo].[Orders] ADD [CancellationReason] nvarchar(1000) NOT NULL CONSTRAINT [DF_Orders_CancellationReason] DEFAULT N'';
             IF COL_LENGTH(N'dbo.Orders', N'RefundedAmount') IS NULL
                 ALTER TABLE [dbo].[Orders] ADD [RefundedAmount] decimal(18,2) NOT NULL CONSTRAINT [DF_Orders_RefundedAmount] DEFAULT 0;
+            IF COL_LENGTH(N'dbo.Orders', N'CompletedAt') IS NULL
+                ALTER TABLE [dbo].[Orders] ADD [CompletedAt] datetime2 NULL;
             IF COL_LENGTH(N'dbo.Orders', N'DeliveryMethod') IS NOT NULL
             BEGIN
                 DECLARE @deliveryMethodDefault sysname;

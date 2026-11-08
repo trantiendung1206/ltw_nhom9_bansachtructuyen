@@ -239,6 +239,8 @@ public class AdminController(AppDbContext db) : Controller
         if (next.TryGetValue(order.Status, out var step))
         {
             order.Status = step.Status;
+            if (step.Status == "Hoàn tất")
+                order.CompletedAt = DateTime.Now;
             db.OrderStatusHistories.Add(new OrderStatusHistory { OrderId = id, Action = step.Action });
             await db.SaveChangesAsync();
         }
@@ -248,14 +250,26 @@ public class AdminController(AppDbContext db) : Controller
     [HttpPost("Orders/{id}/Cancel"), ValidateAntiForgeryToken]
     public async Task<IActionResult> CancelOrder(int id, string reason)
     {
-        var order = await db.Orders.FindAsync(id);
+        var order = await db.Orders.Include(item => item.Items).FirstOrDefaultAsync(item => item.Id == id);
         if (order is null) return NotFound();
         if (order.Status != "Hoàn tất" && order.Status != "Đã trả hàng" && !string.IsNullOrWhiteSpace(reason))
         {
+            var bookIds = order.Items.Select(item => item.BookId).Distinct().ToList();
+            var books = await db.Books.Where(book => bookIds.Contains(book.Id)).ToDictionaryAsync(book => book.Id);
+            if (books.Count != bookIds.Count)
+            {
+                TempData["Message"] = "Không thể hủy đơn vì một hoặc nhiều sách trong đơn không còn tồn tại.";
+                return RedirectToAction(nameof(Orders));
+            }
+
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            foreach (var item in order.Items)
+                books[item.BookId].Stock += item.Quantity;
             order.Status = "Đã hủy";
-            order.CancellationReason = reason;
-            db.OrderStatusHistories.Add(new OrderStatusHistory { OrderId = id, Action = $"Đã hủy đơn hàng: {reason}" });
+            order.CancellationReason = reason.Trim();
+            db.OrderStatusHistories.Add(new OrderStatusHistory { OrderId = id, Action = $"Đã hủy đơn hàng: {order.CancellationReason}" });
             await db.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
         return RedirectToAction(nameof(Orders));
     }
