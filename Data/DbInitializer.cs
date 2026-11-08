@@ -33,7 +33,7 @@ public static class DbInitializer
             IF OBJECT_ID(N'dbo.Categories', N'U') IS NULL
             CREATE TABLE [dbo].[Categories] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [Name] nvarchar(200) NOT NULL, [IsActive] bit NOT NULL);
             IF OBJECT_ID(N'dbo.Orders', N'U') IS NULL
-            CREATE TABLE [dbo].[Orders] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [UserId] nvarchar(450) NULL, [ReceiverName] nvarchar(200) NOT NULL, [Phone] nvarchar(50) NOT NULL, [Address] nvarchar(500) NOT NULL, [DeliveryMethod] nvarchar(30) NOT NULL CONSTRAINT [DF_Orders_DeliveryMethod] DEFAULT N'Ship', [Status] nvarchar(50) NOT NULL, [CancellationReason] nvarchar(1000) NOT NULL CONSTRAINT [DF_Orders_CancellationReason] DEFAULT N'', [Total] decimal(18,2) NOT NULL, [RefundedAmount] decimal(18,2) NOT NULL CONSTRAINT [DF_Orders_RefundedAmount] DEFAULT 0, [CreatedAt] datetime2 NOT NULL);
+            CREATE TABLE [dbo].[Orders] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [UserId] nvarchar(450) NULL, [ReceiverName] nvarchar(200) NOT NULL, [Phone] nvarchar(50) NOT NULL, [Address] nvarchar(500) NOT NULL, [Status] nvarchar(50) NOT NULL, [CancellationReason] nvarchar(1000) NOT NULL CONSTRAINT [DF_Orders_CancellationReason] DEFAULT N'', [Total] decimal(18,2) NOT NULL, [RefundedAmount] decimal(18,2) NOT NULL CONSTRAINT [DF_Orders_RefundedAmount] DEFAULT 0, [CreatedAt] datetime2 NOT NULL);
             IF OBJECT_ID(N'dbo.OrderItems', N'U') IS NULL
             CREATE TABLE [dbo].[OrderItems] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [OrderId] int NOT NULL, [BookId] int NOT NULL, [BookTitle] nvarchar(300) NOT NULL, [Quantity] int NOT NULL, [UnitPrice] decimal(18,2) NOT NULL, CONSTRAINT [FK_OrderItems_Orders] FOREIGN KEY ([OrderId]) REFERENCES [dbo].[Orders]([Id]) ON DELETE CASCADE);
             IF OBJECT_ID(N'dbo.OrderStatusHistories', N'U') IS NULL
@@ -44,6 +44,18 @@ public static class DbInitializer
                 ALTER TABLE [dbo].[Orders] ADD [CancellationReason] nvarchar(1000) NOT NULL CONSTRAINT [DF_Orders_CancellationReason] DEFAULT N'';
             IF COL_LENGTH(N'dbo.Orders', N'RefundedAmount') IS NULL
                 ALTER TABLE [dbo].[Orders] ADD [RefundedAmount] decimal(18,2) NOT NULL CONSTRAINT [DF_Orders_RefundedAmount] DEFAULT 0;
+            IF COL_LENGTH(N'dbo.Orders', N'DeliveryMethod') IS NOT NULL
+            BEGIN
+                DECLARE @deliveryMethodDefault sysname;
+                SELECT @deliveryMethodDefault = dc.name
+                FROM sys.default_constraints dc
+                INNER JOIN sys.columns c ON c.default_object_id = dc.object_id
+                WHERE dc.parent_object_id = OBJECT_ID(N'dbo.Orders')
+                  AND c.name = N'DeliveryMethod';
+                IF @deliveryMethodDefault IS NOT NULL
+                    EXEC(N'ALTER TABLE [dbo].[Orders] DROP CONSTRAINT [' + @deliveryMethodDefault + N']');
+                ALTER TABLE [dbo].[Orders] DROP COLUMN [DeliveryMethod];
+            END;
             """);
         await db.Database.ExecuteSqlRawAsync("""
             IF COL_LENGTH(N'dbo.ReturnRequests', N'CustomerEmail') IS NULL ALTER TABLE [dbo].[ReturnRequests] ADD [CustomerEmail] nvarchar(256) NOT NULL CONSTRAINT [DF_ReturnRequests_CustomerEmail] DEFAULT N'';
