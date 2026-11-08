@@ -19,6 +19,12 @@
                     <div class="return-history">Lý do hủy: <b>@order.CancellationReason</b></div>
                 }
                 <a class="return-link" asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id">Chi tiết đơn hàng</a>
+                @if (order.Status is "Cần xác nhận" or "Đã xác nhận đơn hàng" or "Đã đóng gói - chờ vận chuyển")
+                {
+                    <form asp-controller="Orders" asp-action="Cancel" asp-route-id="@order.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này không?');">
+                        <button class="btn btn-outline-danger btn-sm ms-2" type="submit">Hủy đơn hàng</button>
+                    </form>
+                }
                 @if (order.Status == "Hoàn tất" && (order.CompletedAt ?? order.CreatedAt) >= DateTime.Now.AddDays(-7) && !((IEnumerable<ReturnRequest>)ViewBag.ReturnRequests).Any(item => item.OrderId == order.Id && item.Status != "Từ chối yêu cầu trả hàng"))
                 {
                     <a class="return-link" asp-controller="Support" asp-action="Return" asp-route-orderId="@order.Id">Yêu cầu trả hàng</a>

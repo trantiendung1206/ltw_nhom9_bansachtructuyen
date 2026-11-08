@@ -252,27 +252,43 @@ public class AdminController(AppDbContext db) : Controller
     [HttpPost("Orders/{id}/Cancel"), ValidateAntiForgeryToken]
     public async Task<IActionResult> CancelOrder(int id, string reason)
     {
-        var order = await db.Orders.Include(item => item.Items).FirstOrDefaultAsync(item => item.Id == id);
+        var order = await db.Orders.AsNoTracking()
+            .Include(item => item.Items)
+            .FirstOrDefaultAsync(item => item.Id == id);
         if (order is null) return NotFound();
-        if (order.Status != "Hoàn tất" && order.Status != "Đã trả hàng" && !string.IsNullOrWhiteSpace(reason))
+        if (order.Status is "Hoàn tất" or "Đã trả hàng" or "Đã hủy" || string.IsNullOrWhiteSpace(reason))
         {
-            var bookIds = order.Items.Select(item => item.BookId).Distinct().ToList();
-            var books = await db.Books.Where(book => bookIds.Contains(book.Id)).ToDictionaryAsync(book => book.Id);
-            if (books.Count != bookIds.Count)
-            {
-                TempData["Message"] = "Không thể hủy đơn vì một hoặc nhiều sách trong đơn không còn tồn tại.";
-                return RedirectToAction(nameof(Orders));
-            }
-
-            await using var transaction = await db.Database.BeginTransactionAsync();
-            foreach (var item in order.Items)
-                books[item.BookId].Stock += item.Quantity;
-            order.Status = "Đã hủy";
-            order.CancellationReason = reason.Trim();
-            db.OrderStatusHistories.Add(new OrderStatusHistory { OrderId = id, Action = $"Đã hủy đơn hàng: {order.CancellationReason}" });
-            await db.SaveChangesAsync();
-            await transaction.CommitAsync();
+            TempData["Message"] = "Đơn hàng không thể hủy ở trạng thái hiện tại hoặc thiếu lý do hủy.";
+            return RedirectToAction(nameof(Orders));
         }
+
+        var bookIds = order.Items.Select(item => item.BookId).Distinct().ToList();
+        var books = await db.Books.Where(book => bookIds.Contains(book.Id)).ToDictionaryAsync(book => book.Id);
+        if (books.Count != bookIds.Count)
+        {
+            TempData["Message"] = "Không thể hủy đơn vì một hoặc nhiều sách trong đơn không còn tồn tại.";
+            return RedirectToAction(nameof(Orders));
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        var updated = await db.Orders
+            .Where(item => item.Id == id && item.Status == order.Status &&
+                item.Status != "Hoàn tất" && item.Status != "Đã trả hàng" && item.Status != "Đã hủy")
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(item => item.Status, "Đã hủy")
+                .SetProperty(item => item.CancellationReason, reason.Trim()));
+        if (updated != 1)
+        {
+            await transaction.RollbackAsync();
+            TempData["Message"] = "Trạng thái đơn hàng vừa thay đổi; không thể hủy đơn.";
+            return RedirectToAction(nameof(Orders));
+        }
+
+        foreach (var item in order.Items)
+            books[item.BookId].Stock += item.Quantity;
+        db.OrderStatusHistories.Add(new OrderStatusHistory { OrderId = id, Action = $"Đã hủy đơn hàng: {reason.Trim()}" });
+        await db.SaveChangesAsync();
+        await transaction.CommitAsync();
         return RedirectToAction(nameof(Orders));
     }
 

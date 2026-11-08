@@ -109,6 +109,8 @@ migrations cho schema tùy biến.
   Nhân viên dùng thông tin này để đặt COD qua đơn vị giao hàng bên ngoài; phí
   giao hàng do khách thanh toán trực tiếp cho shipper và không thuộc hệ thống.
 - Trừ tồn kho sau khi đặt hàng và thông báo mã đơn hàng; trạng thái ban đầu là `Cần xác nhận`.
+- Khách hàng có thể hủy đơn trước khi chuyển sang trạng thái `Đang vận chuyển`;
+  tồn kho được cộng lại cùng transaction và lịch sử hủy được ghi nhận.
 - Khách có thể đánh giá từng sách từ 1 đến 5 sao sau khi đơn hoàn tất.
 - Dashboard Admin có thống kê tổng quan; tồn kho được quản lý trong trang sách.
 - Responsive mobile, Bootstrap 5 và nhóm font sans-serif phổ biến (Arial/Roboto/Helvetica/Tahoma).

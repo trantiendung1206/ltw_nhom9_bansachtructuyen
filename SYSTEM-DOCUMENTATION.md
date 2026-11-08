@@ -142,7 +142,8 @@ tin demo và không dùng chúng khi triển khai thực tế.
 | `/Account/Logout` | POST | Đăng xuất (liên kết chỉ hiển thị khi đã đăng nhập) |
 | `/Cart` và các thao tác giỏ hàng | Đã đăng nhập | Xem, thêm, cập nhật, xóa sách trong giỏ |
 | `/Checkout` | Đã đăng nhập | Nhập thông tin nhận hàng và đặt đơn |
-| `/Orders`, `/Orders/Details/{id}` | Đã đăng nhập | Xem đơn của chính tài khoản |
+| `/Orders`, `/Orders/Details/{id}` | Đã đăng nhập | Xem đơn của chính tài khoản; hủy đơn trước khi vận chuyển |
+| `/Orders/Cancel/{id}` | Đã đăng nhập, POST | Hủy đơn của chính tài khoản trước khi chuyển sang vận chuyển |
 | `/Orders/Rate` | Đã đăng nhập, POST | Đánh giá sách trong đơn đã hoàn tất |
 | `/Support/Return`, `/Support/Feedback` | Đã đăng nhập | Gửi yêu cầu hoàn tiền hoặc góp ý |
 | `/Admin` và các URL `/Admin/...` | Role `Admin` | Quản trị sách, đơn hàng, danh mục, ưu đãi, trả hàng và góp ý |
@@ -211,7 +212,14 @@ hàng và phí giao hàng cho đơn vị giao hàng theo thỏa thuận bên ngo
 
 `/Orders` chỉ trả về đơn thuộc tài khoản đang đăng nhập. Khách có thể xem mã
 đơn, mặt hàng, số lượng, tổng tiền sách, thông tin nhận hàng, trạng thái, lý do
-hủy và các yêu cầu hoàn tiền. Trang chi tiết không cho khách sửa hoặc hủy đơn.
+hủy và các yêu cầu hoàn tiền. Tại danh sách đơn, khách có thể hủy đơn ở trạng
+thái `Cần xác nhận`, `Đã xác nhận đơn hàng` hoặc `Đã đóng gói - chờ vận chuyển`.
+Không thể hủy từ khi đơn chuyển sang `Đang vận chuyển` trở đi. Thao tác hủy là
+POST có anti-forgery token, chỉ áp dụng lên đơn của tài khoản đang đăng nhập,
+đổi trạng thái sang `Đã hủy`, lưu lý do `Khách hàng yêu cầu hủy đơn hàng.`,
+ghi lịch sử và cộng lại tồn kho trong cùng transaction. Server kiểm tra lại
+trạng thái trong câu lệnh cập nhật để tránh hủy đồng thời hai lần hoặc hoàn kho
+nhiều lần.
 
 Các trạng thái đơn được dùng trong luồng chính:
 
@@ -285,9 +293,11 @@ Toàn bộ controller Admin được bảo vệ bởi role `Admin`.
   hàng, các dòng hàng và lịch sử xử lý.
 - Admin chuyển trạng thái theo thứ tự: xác nhận, đóng gói, đang vận chuyển,
   hoàn tất. Thời điểm chuyển sang hoàn tất được lưu trong `CompletedAt`.
-- Giao diện cho phép hủy đơn trước trạng thái hoàn tất/đã hủy/đã trả hàng, yêu
-  cầu lý do và cộng lại tồn kho. Cập nhật trạng thái và tồn kho được thực hiện
-  trong transaction.
+- Admin có thể hủy các đơn chưa ở trạng thái `Hoàn tất`, `Đã hủy` hoặc `Đã trả
+  hàng`, nhập lý do và cộng lại tồn kho trong transaction. Trạng thái đơn được
+  cập nhật có điều kiện để tránh hai yêu cầu đồng thời hoàn kho trùng lặp.
+- Khách hàng có thể hủy đơn đến trước khi đơn chuyển sang `Đang vận chuyển`;
+  cách xử lý và giới hạn chi tiết được mô tả trong mục theo dõi đơn hàng.
 
 ### Góp ý
 
