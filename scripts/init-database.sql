@@ -3,8 +3,9 @@
 
     Script này chỉ tạo database rỗng. Schema không được khai báo thủ công ở đây:
     ứng dụng ASP.NET Core sẽ gọi DbInitializer khi khởi động để chạy
-    EnsureCreated, tạo các bảng Identity/nghiệp vụ, cập nhật schema cũ và seed
-    dữ liệu mẫu. Giữ cách này đồng bộ với AppDbContext và mã khởi tạo hiện tại.
+    EnsureCreated, tạo các bảng Identity/nghiệp vụ, cập nhật schema cũ, reset
+    dữ liệu cũ một lần và seed sách/tài khoản demo mới. Giữ cách này đồng bộ với
+    AppDbContext và mã khởi tạo hiện tại.
 
     Chạy bằng SQL Server Management Studio hoặc sqlcmd với tài khoản có quyền
     tạo database.

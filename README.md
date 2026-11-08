@@ -49,24 +49,10 @@ sqlcmd -S ".\MSSQLSERVER01" -E -i ".\scripts\init-database.sql"
 ```
 
 Script chỉ tạo database `GroupNine`. Khi ứng dụng khởi động,
-`Data/DbInitializer.cs` dùng `EnsureCreated` để tạo schema nếu cần, chạy một số
-câu lệnh SQL bổ sung/cập nhật schema cũ, đồng bộ 7 danh mục, thêm sách mẫu,
-role và tài khoản demo. Đây không phải quy trình EF Core migrations; không cần
-chạy migration thủ công.
-
-Database trên instance mặc định của dự án hiện đã mang tên `GroupNine`. Nếu cài
-đặt khác vẫn có database cũ `LatTrangBookStore` chứa dữ liệu, hãy sao lưu và
-xác nhận chưa có database `GroupNine` trước khi đổi tên. Không chạy script tạo
-database trước khi quyết định cách chuyển dữ liệu, vì script không sao chép
-database cũ. Để giữ nguyên dữ liệu, dừng ứng dụng, kết nối SQL Server vào
-database `master` và chạy:
-
-```sql
-ALTER DATABASE [LatTrangBookStore] MODIFY NAME = [GroupNine];
-```
-
-Sau đó chạy ứng dụng với connection string mặc định. Nếu cả hai database cùng
-tồn tại, chọn đúng database có dữ liệu cần dùng và sao lưu trước mọi thao tác.
+`Data/DbInitializer.cs` dùng `EnsureCreated` để tạo schema nếu cần, sau đó xóa
+dữ liệu nghiệp vụ, toàn bộ tài khoản/vai trò cũ **một lần** và tạo lại dữ liệu
+demo mới. Hãy sao lưu nếu cần giữ dữ liệu cũ trước lần chạy đầu tiên sau thay đổi
+này. Đây không phải quy trình EF Core migrations; không cần chạy migration thủ công.
 
 ### 2. Chạy website
 
@@ -126,13 +112,16 @@ migrations cho schema tùy biến.
 Ứng dụng hiện dùng SQL Server + Entity Framework Core. Script
 `scripts/init-database.sql` chỉ tạo database rỗng `GroupNine` trên
 instance `.\\MSSQLSERVER01`; `DbInitializer` khởi tạo schema bằng
-`EnsureCreated` khi cần, thực hiện một số cập nhật schema có điều kiện và seed
-dữ liệu, role `Admin`/`Customer`. Đây không phải quy trình EF Core migrations.
+`EnsureCreated` khi cần, reset dữ liệu cũ đúng một lần, rồi seed 47 sách,
+7 danh mục và role `Admin`/`Customer`. Bảng `AppDataReset` ghi nhận lần reset
+để các lần khởi động sau không xóa dữ liệu mới. Đây không phải quy trình EF Core
+migrations.
 
-- Admin: `admin@groupnine.vn` / `Admin123456`
-- Customer: `customer@groupnine.vn` / `Customer123!`
-- Admin mẫu: `admin1@gmail.com`, `admin2@gmail.com`, `admin3@gmail.com` / `Admin123456`
-- Khách hàng mẫu: `khachhangmau1@gmail.com` / `CustomerOne123`; `khachhangmau2@gmail.com` / `CustomerTwo123`; `khachhangmau3@gmail.com` / `CustomerThree123`
+- Admin 1: `admin1@gmail.com` / `Admin123456`
+- Admin 2: `admin2@gmail.com` / `Admin123456`
+- Khách hàng mẫu: `khach1@gmail.com` / `Khach123456`
+- Ảnh bìa: `wwwroot/images/books/{1..47}.jpg`, ánh xạ theo STT trong
+  `DanhSachSach_GroupNine.md`.
 - Đăng nhập: `/Account/Login`
 - Đăng ký: `/Account/Register`
 - Quản trị sách: `/Admin` (chỉ role Admin truy cập được)
@@ -141,14 +130,10 @@ dữ liệu, role `Admin`/`Customer`. Đây không phải quy trình EF Core mig
 - Giỏ hàng và đặt hàng yêu cầu đăng nhập; khách chưa đăng nhập sẽ được chuyển tới `/Account/Login`.
 
 Schema Identity và nghiệp vụ được khởi tạo từ `AppDbContext`/`EnsureCreated`,
-còn dữ liệu mẫu và các cập nhật schema bổ sung do `DbInitializer` thực hiện.
-Connection string mặc định nằm trong `appsettings.json`. Khi ứng dụng khởi động,
-initializer đổi email và tên đăng nhập của hai tài khoản demo cũ từ miền
-`latrang.vn` sang `groupnine.vn`, giữ nguyên ID và vai trò; nếu email mới đã
-thuộc tài khoản khác, initializer báo lỗi thay vì gộp tài khoản. Mật khẩu mặc
-định cũ `12345678` của tài khoản demo phụ chỉ được nâng cấp nếu tài khoản vẫn
-còn dùng mật khẩu đó; mật khẩu do người dùng tự đổi sẽ được giữ nguyên.
-Email liên hệ trong góp ý của khách hàng demo cũng được cập nhật.
+còn dữ liệu mẫu và reset ban đầu do `DbInitializer` thực hiện. Connection string
+mặc định nằm trong `appsettings.json`. Reset xóa đơn hàng, góp ý, đánh giá,
+sách, danh mục, tài khoản, role và các liên kết Identity hiện có trong database
+được cấu hình trước khi seed lại ba tài khoản demo.
 
 ## Xử lý lỗi thường gặp
 

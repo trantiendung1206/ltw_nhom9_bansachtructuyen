@@ -54,13 +54,6 @@ dotnet run
 
 Có thể chạy script `scripts/init-database.sql` trong SSMS thay cho `sqlcmd`.
 Script chỉ tạo database rỗng `GroupNine`, không khai báo các bảng.
-Trên SQL Server instance mặc định hiện tại, database đã được đổi tên từ
-`LatTrangBookStore` thành `GroupNine`; tên logic file là `GroupNine` và
-`GroupNine_log`. Hai tài khoản demo cùng email góp ý demo cũng đã được chuyển
-sang miền `groupnine.vn`. Tên vật lý file MDF/LDF trên instance này vẫn là
-`LatTrangBookStore.mdf` và `LatTrangBookStore_log.ldf`; đây là tên file lưu
-trữ trên máy chủ, không phải tên database hay tên logic file ứng dụng kết nối
-tới. Đổi tên file vật lý không cần thiết để ứng dụng sử dụng database `GroupNine`.
 
 Ứng dụng khởi tạo dữ liệu khi khởi động. Profile HTTP mặc định dùng
 `http://localhost:5080`; profile HTTPS dùng `https://localhost:7188` và
@@ -71,19 +64,11 @@ Nếu SQL Server dùng instance khác, sửa
 giá trị tương ứng bằng cơ chế cấu hình của ASP.NET Core. Mặc định connection
 string dùng Windows Integrated Security (`Trusted_Connection=True`).
 
-Nếu cài đặt khác vẫn có database cũ `LatTrangBookStore` chứa dữ liệu, không
-chạy script tạo database trước khi quyết định cách chuyển đổi: script tạo
-`GroupNine` rỗng, không sao chép dữ liệu. Sao lưu trước, dừng ứng dụng, xác
-nhận `GroupNine` chưa tồn tại, sau đó kết nối SQL Server vào `master` và đổi
-tên database cũ để giữ nguyên dữ liệu:
-
-```sql
-ALTER DATABASE [LatTrangBookStore] MODIFY NAME = [GroupNine];
-```
-
-Script khởi tạo không tự đổi tên hoặc sao chép database cũ. Nếu cả
-`LatTrangBookStore` và `GroupNine` cùng tồn tại, cần xác định database chứa dữ
-liệu cần dùng; không ghi đè hoặc xóa database nào khi chưa sao lưu.
+Lần khởi động đầu tiên sau thay đổi này sẽ xóa dữ liệu ứng dụng hiện có trong
+database cấu hình (sách, đơn hàng, góp ý, đánh giá, tài khoản và vai trò) trước
+khi tạo lại dữ liệu demo. Sao lưu trước nếu cần giữ dữ liệu. Việc reset chỉ chạy
+một lần cho mỗi database; bảng `AppDataReset` ngăn các lần khởi động sau xóa dữ
+liệu mới.
 
 ### Cách khởi tạo schema và seed
 
@@ -91,12 +76,12 @@ Khi khởi động, `DbInitializer`:
 
 1. Gọi `EnsureCreated` để tạo schema theo `AppDbContext` nếu database chưa có.
 2. Chạy các câu lệnh SQL có điều kiện để bổ sung một số bảng/cột còn thiếu ở
-   schema cũ (bao gồm ISBN và số lượt đánh giá), chuẩn hóa một số trạng thái
-   đơn hàng cũ và tạo lịch sử ban đầu còn thiếu.
-3. Nếu chưa có sách, thêm bộ sách mẫu; nếu đã có sách, bổ sung những sách mẫu
-   còn thiếu theo tên.
-4. Đồng bộ danh mục với danh sách cố định bên dưới, tạo hai role và tạo/cập
-   nhật hồ sơ các tài khoản demo.
+   schema cũ (bao gồm ISBN và số lượt đánh giá).
+3. Nếu chưa có dấu reset, xóa dữ liệu nghiệp vụ và Identity theo thứ tự khóa
+   ngoại trong một transaction.
+4. Thêm 47 sách từ danh sách GroupNine, 7 danh mục, hai role và ba tài khoản
+   demo (hai Admin, một Customer). Ảnh bìa `wwwroot/images/books/{1..47}.jpg`
+   khớp STT sách trong file `DanhSachSach_GroupNine.md`.
 
 Đây **không phải** quy trình EF Core migrations và không có bước
 `dotnet ef database update`. Không nên xem các lệnh tương thích schema thủ công
@@ -121,28 +106,17 @@ là công cụ migration tổng quát cho mọi schema tùy biến.
   về trang chủ; URL chuyển hướng nội bộ ban đầu, nếu có, cũng được hỗ trợ.
 - Đăng xuất là request POST và kết thúc phiên Identity.
 
-Tài khoản được tạo trên database mới:
+Tài khoản demo:
 
 | Vai trò | Email | Mật khẩu |
 |---|---|---|
-| Admin | `admin@groupnine.vn` | `Admin123456` |
 | Admin | `admin1@gmail.com` | `Admin123456` |
 | Admin | `admin2@gmail.com` | `Admin123456` |
-| Admin | `admin3@gmail.com` | `Admin123456` |
-| Customer | `customer@groupnine.vn` | `Customer123!` |
-| Customer | `khachhangmau1@gmail.com` | `CustomerOne123` |
-| Customer | `khachhangmau2@gmail.com` | `CustomerTwo123` |
-| Customer | `khachhangmau3@gmail.com` | `CustomerThree123` |
+| Customer | `khach1@gmail.com` | `Khach123456` |
 
-Các thông tin trên chỉ dành cho môi trường demo. Khi chạy, initializer đổi email
-và tên đăng nhập của hai tài khoản demo cũ `admin@latrang.vn` và
-`customer@latrang.vn` sang địa chỉ `@groupnine.vn`, giữ nguyên ID và vai trò;
-email liên hệ của góp ý demo cũng được cập nhật. Với các tài khoản demo phụ
-còn dùng mật khẩu seed trước đây, initializer đổi các tài khoản Admin sang
-`Admin123456`; các mật khẩu khách hàng cũ `12345678` được nâng cấp theo chính
-sách hiện tại. Mật khẩu đã được người dùng thay đổi sẽ không bị ghi đè. Nếu địa
-chỉ mới đã thuộc tài khoản khác, initializer báo lỗi thay vì gộp tài khoản. Hãy
-đổi thông tin demo và không dùng chúng khi triển khai thực tế.
+Các thông tin trên chỉ dành cho môi trường demo. Tài khoản demo cũ được gỡ bỏ
+và hai tài khoản Admin cùng một tài khoản Customer được đồng bộ lại khi ứng
+dụng khởi động. Hãy đổi thông tin demo và không dùng chúng khi triển khai thực tế.
 
 ## 4. Điều hướng và phân quyền theo chức năng
 
@@ -424,21 +398,18 @@ qua khóa ngoại trong schema. Xóa sách qua Admin/API bị chặn khi có dò
 
 - `EnsureCreated` tạo schema trên database chưa có. Các câu SQL có điều kiện
   trong initializer bổ sung những bảng/cột đã biết cho schema cũ, gồm
-  `ISBN`, `ReviewCount`, các cột đơn hàng/yêu cầu hỗ trợ, và chuẩn hóa một số
-  trạng thái đơn cũ.
-- Bộ sách mẫu được thêm toàn bộ khi chưa có sách; khi sách đã có, initializer
-  chỉ bổ sung những tên sách seed chưa tồn tại. Không nên coi seed là thao tác
-  đồng bộ/ghi đè toàn bộ tên, giá, tồn kho, ảnh hay mô tả của sách đã được quản
-  trị viên chỉnh sửa.
-- Danh mục bị đưa về bộ 7 danh mục cố định; một số tên danh mục cũ được ánh xạ
-  sang tên hiện tại.
+  `ISBN`, `ReviewCount` và các cột đơn hàng/yêu cầu hỗ trợ.
+- Reset lần đầu xóa dữ liệu ứng dụng cùng các bảng Identity theo thứ tự khóa
+  ngoại trong một transaction; dấu `AppDataReset` giúp quá trình này chỉ chạy
+  một lần.
+- Sau reset, sách seed gồm 47 mục từ danh sách GroupNine; ảnh bìa dùng đường dẫn
+  `/images/books/{STT}.jpg`. Danh mục được đồng bộ với bộ 7 danh mục hiện tại.
 - Mỗi lần khởi tạo, `Rating` và `ReviewCount` được tính lại từ `BookReviews`.
   ISBN cũ không được biết sẽ để trống; quản trị viên có thể cập nhật trong form
   sách. Ứng dụng không tự tạo mã ISBN giả.
-- Email tài khoản demo cũ được chuyển sang miền `groupnine.vn` nếu tài khoản
-  mới chưa bị tài khoản khác chiếm. Các mật khẩu Admin cũ được đổi sang
-  `Admin123456` khi mật khẩu hiện tại còn khớp một trong các mật khẩu seed cũ
-  đã biết; mật khẩu khác do người dùng tự đổi không bị ghi đè.
+- Tài khoản demo cũ được gỡ bỏ; ứng dụng seed hai Admin và một Customer theo
+  danh sách ở mục 3. Các tài khoản Admin khác bị gỡ quyền Admin.
+- Dữ liệu phát sinh mới trong những lần chạy sau không bị reset.
 - Mọi cập nhật trực tiếp từ initializer nên được sao lưu database trước khi
   triển khai trên dữ liệu quan trọng. Đây là cập nhật tương thích schema có
   phạm vi cụ thể, không thay thế migration versioned cho triển khai production.

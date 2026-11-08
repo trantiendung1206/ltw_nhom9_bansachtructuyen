@@ -31,11 +31,6 @@ public static class DbInitializer
             CREATE TABLE [dbo].[BookReviews] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [BookId] int NOT NULL, [OrderId] int NOT NULL, [UserId] nvarchar(450) NOT NULL, [Rating] int NOT NULL, [CreatedAt] datetime2 NOT NULL, CONSTRAINT [UQ_BookReviews_Book_Order_User] UNIQUE ([BookId], [OrderId], [UserId]), CONSTRAINT [FK_BookReviews_Books] FOREIGN KEY ([BookId]) REFERENCES [dbo].[Books]([Id]) ON DELETE CASCADE, CONSTRAINT [FK_BookReviews_Orders] FOREIGN KEY ([OrderId]) REFERENCES [dbo].[Orders]([Id]) ON DELETE CASCADE);
             """);
         await db.Database.ExecuteSqlRawAsync("""
-            UPDATE [dbo].[Orders] SET [Status] = N'Cần xác nhận' WHERE [Status] IN (N'Mới', N'Đang xử lý');
-            UPDATE [dbo].[Orders] SET [Status] = N'Đã xác nhận đơn hàng' WHERE [Status] = N'Đã xác nhận';
-            UPDATE [dbo].[Orders] SET [Status] = N'Đang vận chuyển' WHERE [Status] = N'Đang giao';
-            """);
-        await db.Database.ExecuteSqlRawAsync("""
             IF OBJECT_ID(N'dbo.Categories', N'U') IS NULL
             CREATE TABLE [dbo].[Categories] ([Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY, [Name] nvarchar(200) NOT NULL, [IsActive] bit NOT NULL);
             IF OBJECT_ID(N'dbo.Orders', N'U') IS NULL
@@ -75,6 +70,7 @@ public static class DbInitializer
             IF OBJECT_ID(N'dbo.Wishlists', N'U') IS NOT NULL
                 DROP TABLE [dbo].[Wishlists];
             """);
+        await ResetApplicationDataOnceAsync(db);
         foreach (var order in await db.Orders.Where(order => !db.OrderStatusHistories.Any(history => history.OrderId == order.Id)).ToListAsync())
             db.OrderStatusHistories.Add(new OrderStatusHistory { OrderId = order.Id, OccurredAt = order.CreatedAt, Action = "Đã đặt hàng" });
         await db.SaveChangesAsync();
@@ -145,30 +141,86 @@ public static class DbInitializer
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         foreach (var role in new[] { "Admin", "Customer" })
             if (!await roleManager.RoleExistsAsync(role))
-                await roleManager.CreateAsync(new IdentityRole(role));
+            {
+                var result = await roleManager.CreateAsync(new IdentityRole(role));
+                if (!result.Succeeded)
+                    throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
+            }
 
         var userManager = services.GetRequiredService<UserManager<AppUser>>();
-        await RenameDemoUserAsync(userManager, "admin@latrang.vn", "admin@groupnine.vn");
-        await RenameDemoUserAsync(userManager, "customer@latrang.vn", "customer@groupnine.vn");
-        await db.CustomerFeedbacks
-            .Where(feedback => feedback.CustomerEmail == "customer@latrang.vn")
-            .ExecuteUpdateAsync(setters => setters.SetProperty(
-                feedback => feedback.CustomerEmail, "customer@groupnine.vn"));
-        await CreateUserAsync(userManager, "admin@groupnine.vn", "Admin123456", "Quản trị viên", "Admin", "0900000000");
+        await RemoveObsoleteDemoUsersAsync(userManager);
         await CreateUserAsync(userManager, "admin1@gmail.com", "Admin123456", "Quản trị viên 1", "Admin", "0900000001");
         await CreateUserAsync(userManager, "admin2@gmail.com", "Admin123456", "Quản trị viên 2", "Admin", "0900000002");
-        await CreateUserAsync(userManager, "admin3@gmail.com", "Admin123456", "Quản trị viên 3", "Admin", "0900000003");
-        await CreateUserAsync(userManager, "customer@groupnine.vn", "Customer123!", "Khách hàng mẫu", "Customer", "0910000000");
-        await CreateUserAsync(userManager, "khachhangmau1@gmail.com", "CustomerOne123", "Khách hàng mẫu 1", "Customer", "0910000001");
-        await CreateUserAsync(userManager, "khachhangmau2@gmail.com", "CustomerTwo123", "Khách hàng mẫu 2", "Customer", "0910000002");
-        await CreateUserAsync(userManager, "khachhangmau3@gmail.com", "CustomerThree123", "Khách hàng mẫu 3", "Customer", "0910000003");
-        await MigrateDemoPasswordAsync(userManager, "admin@groupnine.vn", "Admin123456", "Admin123!", "12345678");
-        await MigrateDemoPasswordAsync(userManager, "admin1@gmail.com", "Admin123456", "AdminOne123", "12345678");
-        await MigrateDemoPasswordAsync(userManager, "admin2@gmail.com", "Admin123456", "AdminTwo123", "12345678");
-        await MigrateDemoPasswordAsync(userManager, "admin3@gmail.com", "Admin123456", "AdminThree123", "12345678");
-        await MigrateDemoPasswordAsync(userManager, "khachhangmau1@gmail.com", "CustomerOne123", "12345678");
-        await MigrateDemoPasswordAsync(userManager, "khachhangmau2@gmail.com", "CustomerTwo123", "12345678");
-        await MigrateDemoPasswordAsync(userManager, "khachhangmau3@gmail.com", "CustomerThree123", "12345678");
+        await CreateUserAsync(userManager, "khach1@gmail.com", "Khach123456", "Khách hàng mẫu", "Customer", "0910000001");
+    }
+
+    private static async Task RemoveObsoleteDemoUsersAsync(UserManager<AppUser> userManager)
+    {
+        var obsoleteEmails = new[]
+        {
+            "admin@latrang.vn", "customer@latrang.vn",
+            "admin@groupnine.vn", "admin3@gmail.com",
+            "customer@groupnine.vn",
+            "khachhangmau1@gmail.com", "khachhangmau2@gmail.com", "khachhangmau3@gmail.com"
+        };
+        foreach (var email in obsoleteEmails)
+        {
+            var user = await userManager.FindByEmailAsync(email);
+            if (user is null)
+                continue;
+
+            var result = await userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+                throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
+        }
+
+        var expectedAdmins = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "admin1@gmail.com", "admin2@gmail.com"
+        };
+        foreach (var admin in await userManager.GetUsersInRoleAsync("Admin"))
+        {
+            if (admin.Email is not null && expectedAdmins.Contains(admin.Email))
+                continue;
+
+            var result = await userManager.RemoveFromRoleAsync(admin, "Admin");
+            if (!result.Succeeded)
+                throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
+        }
+    }
+
+    private static async Task ResetApplicationDataOnceAsync(AppDbContext db)
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            IF OBJECT_ID(N'dbo.AppDataReset', N'U') IS NULL
+                CREATE TABLE [dbo].[AppDataReset] ([Id] int NOT NULL PRIMARY KEY, [AppliedAt] datetime2 NOT NULL);
+            """);
+
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        var resetApplied = await db.Database.SqlQueryRaw<int>(
+            "SELECT COUNT(*) AS [Value] FROM [dbo].[AppDataReset] WHERE [Id] = {0}", 1).SingleAsync();
+        if (resetApplied == 0)
+        {
+            await db.Database.ExecuteSqlRawAsync("""
+                DELETE FROM [dbo].[BookReviews];
+                DELETE FROM [dbo].[ReturnRequests];
+                DELETE FROM [dbo].[CustomerFeedbacks];
+                DELETE FROM [dbo].[OrderItems];
+                DELETE FROM [dbo].[OrderStatusHistories];
+                DELETE FROM [dbo].[Orders];
+                DELETE FROM [dbo].[Books];
+                DELETE FROM [dbo].[Categories];
+                DELETE FROM [dbo].[AspNetUserClaims];
+                DELETE FROM [dbo].[AspNetUserLogins];
+                DELETE FROM [dbo].[AspNetUserTokens];
+                DELETE FROM [dbo].[AspNetUserRoles];
+                DELETE FROM [dbo].[AspNetRoleClaims];
+                DELETE FROM [dbo].[AspNetUsers];
+                DELETE FROM [dbo].[AspNetRoles];
+                INSERT INTO [dbo].[AppDataReset] ([Id], [AppliedAt]) VALUES (1, SYSUTCDATETIME());
+                """);
+        }
+        await transaction.CommitAsync();
     }
 
     private static async Task CreateUserAsync(
@@ -177,7 +229,15 @@ public static class DbInitializer
         var user = await userManager.FindByEmailAsync(email);
         if (user is null)
         {
-            user = new AppUser { UserName = email, Email = email, EmailConfirmed = true, FullName = fullName, PhoneNumber = phone, PhoneNumberConfirmed = true };
+            user = new AppUser
+            {
+                UserName = email,
+                Email = email,
+                EmailConfirmed = true,
+                FullName = fullName,
+                PhoneNumber = phone,
+                PhoneNumberConfirmed = true
+            };
             var result = await userManager.CreateAsync(user, password);
             if (!result.Succeeded)
                 throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
@@ -187,50 +247,26 @@ public static class DbInitializer
             user.FullName = fullName;
             user.PhoneNumber = phone;
             user.PhoneNumberConfirmed = true;
-            await userManager.UpdateAsync(user);
+            var result = await userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+                throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
         }
+
+        foreach (var currentRole in await userManager.GetRolesAsync(user))
+        {
+            if (currentRole == role)
+                continue;
+
+            var removeResult = await userManager.RemoveFromRoleAsync(user, currentRole);
+            if (!removeResult.Succeeded)
+                throw new InvalidOperationException(string.Join("; ", removeResult.Errors.Select(error => error.Description)));
+        }
+
         if (!await userManager.IsInRoleAsync(user, role))
-            await userManager.AddToRoleAsync(user, role);
-    }
-
-    private static async Task RenameDemoUserAsync(
-        UserManager<AppUser> userManager, string oldEmail, string newEmail)
-    {
-        var user = await userManager.FindByEmailAsync(oldEmail);
-        if (user is null)
-            return;
-
-        var existingUser = await userManager.FindByEmailAsync(newEmail);
-        if (existingUser is not null && existingUser.Id != user.Id)
-            throw new InvalidOperationException(
-                $"Cannot rename demo account '{oldEmail}' because '{newEmail}' is already in use.");
-
-        user.Email = newEmail;
-        user.UserName = newEmail;
-        var result = await userManager.UpdateAsync(user);
-        if (!result.Succeeded)
-            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
-    }
-
-    private static async Task MigrateDemoPasswordAsync(
-        UserManager<AppUser> userManager, string email, string newPassword, params string[] previousPasswords)
-    {
-        var user = await userManager.FindByEmailAsync(email);
-        if (user is null || !await CheckAnyPasswordAsync(userManager, user, previousPasswords))
-            return;
-
-        var token = await userManager.GeneratePasswordResetTokenAsync(user);
-        var result = await userManager.ResetPasswordAsync(user, token, newPassword);
-        if (!result.Succeeded)
-            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
-    }
-
-    private static async Task<bool> CheckAnyPasswordAsync(
-        UserManager<AppUser> userManager, AppUser user, IEnumerable<string> passwords)
-    {
-        foreach (var password in passwords)
-            if (await userManager.CheckPasswordAsync(user, password))
-                return true;
-        return false;
+        {
+            var result = await userManager.AddToRoleAsync(user, role);
+            if (!result.Succeeded)
+                throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
+        }
     }
 }
