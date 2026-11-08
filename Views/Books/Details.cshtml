@@ -1,3 +1,54 @@
 @model Book
-@{ ViewData["Title"] = Model.Title; }
-<div class="container detail-page"><div class="row g-5"><div class="col-md-5 text-center"><img class="detail-cover" src="@Model.CoverImage" alt="@Model.Title" /></div><div class="col-md-7 detail-copy"><span class="eyebrow">@Model.Category</span><h1>@Model.Title</h1><p class="author">Tác giả: <b>@Model.Author</b></p><div class="stars large">★ @Model.Rating <span>(128 lượt đánh giá)</span></div><div class="detail-price">@Model.SalePrice.ToString("N0")đ @if (Model.DiscountPercent > 0 || Model.DiscountAmount > 0) { <del>@Model.Price.ToString("N0")đ</del> }</div><p>@Model.Description</p><p class="stock">✓ Còn @Model.Stock cuốn trong kho</p>@if (User.Identity?.IsAuthenticated == true) { <form asp-controller="Cart" asp-action="Add" method="post" class="d-flex gap-3"><input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" /><input type="number" name="quantity" value="1" min="1" max="@Model.Stock" class="quantity" /><button class="btn btn-orange">Thêm vào giỏ hàng →</button></form> } else { <a class="btn btn-orange" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@($"{Context.Request.Path}{Context.Request.QueryString}")">Đăng nhập để đặt mua →</a> }</div></div></div>
+@{
+    ViewData["Title"] = Model.Title;
+    var hasReviews = Model.ReviewCount > 0;
+}
+<div class="container detail-page">
+    <div class="row g-5">
+        <div class="col-md-5 text-center">
+            <img class="detail-cover" src="@Model.CoverImage" alt="@Model.Title" />
+        </div>
+        <div class="col-md-7 detail-copy">
+            <span class="eyebrow">@Model.Category</span>
+            <h1>@Model.Title</h1>
+            <p class="author">Tác giả: <b>@Model.Author</b></p>
+            <div class="stars large">@(hasReviews ? "★" : "☆") @(hasReviews ? Model.Rating.ToString("0.0") : "0.0")
+                <span>(@Model.ReviewCount lượt đánh giá)</span>
+            </div>
+            <p class="book-isbn"><b>ISBN:</b> @(string.IsNullOrWhiteSpace(Model.ISBN) ? "Chưa cập nhật" : Model.ISBN)</p>
+            <div class="detail-price">
+                @Model.SalePrice.ToString("N0")đ
+                @if (Model.DiscountPercent > 0 || Model.DiscountAmount > 0)
+                {
+                    <del>@Model.Price.ToString("N0")đ</del>
+                }
+            </div>
+            <p class="stock">✓ Còn @Model.Stock cuốn trong kho</p>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <form asp-controller="Cart" asp-action="Add" method="post" class="d-flex gap-3">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                    <input type="number" name="quantity" value="1" min="1" max="@Model.Stock" class="quantity" />
+                    <button class="btn btn-orange">Thêm vào giỏ hàng →</button>
+                </form>
+            }
+            else
+            {
+                <a class="btn btn-orange" asp-controller="Account" asp-action="Login"
+                   asp-route-returnUrl="@($"{Context.Request.Path}{Context.Request.QueryString}")">Đăng nhập để đặt mua →</a>
+            }
+        </div>
+    </div>
+    <section class="book-description-section">
+        <h2>Mô tả sách</h2>
+        @if (string.IsNullOrWhiteSpace(Model.Description))
+        {
+            <p class="text-muted mb-0">Chưa có mô tả cho sách này.</p>
+        }
+        else
+        {
+            <div class="book-description">@Html.Raw(Model.Description)</div>
+        }
+    </section>
+</div>

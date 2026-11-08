@@ -23,7 +23,7 @@ public sealed class AccountController(
             ?? await userManager.Users.FirstOrDefaultAsync(item => item.PhoneNumber == model.Identifier);
         var result = user is null
             ? Microsoft.AspNetCore.Identity.SignInResult.Failed
-            : await signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, false);
+            : await signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, true);
         if (result.Succeeded)
         {
             var destination = user is not null && await userManager.IsInRoleAsync(user, "Admin")
@@ -78,9 +78,9 @@ public sealed class LoginViewModel
 
 public sealed class RegisterViewModel
 {
-    [Required, Display(Name = "Họ và tên")] public string FullName { get; set; } = "";
-    [Required, EmailAddress, Display(Name = "Email")] public string Email { get; set; } = "";
-    [Required, Phone, Display(Name = "Số điện thoại")] public string Phone { get; set; } = "";
-    [Required, MinLength(6), DataType(DataType.Password), Display(Name = "Mật khẩu")] public string Password { get; set; } = "";
+    [Required, StringLength(200), Display(Name = "Họ và tên")] public string FullName { get; set; } = "";
+    [Required, EmailAddress, StringLength(256), Display(Name = "Email")] public string Email { get; set; } = "";
+    [Required, Phone, StringLength(50), Display(Name = "Số điện thoại")] public string Phone { get; set; } = "";
+    [Required, MinLength(8), RegularExpression(@"^(?=.*[A-Z])(?=.*\d).+$", ErrorMessage = "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ in hoa và chữ số."), DataType(DataType.Password), Display(Name = "Mật khẩu")] public string Password { get; set; } = "";
     [Required, Compare(nameof(Password)), DataType(DataType.Password), Display(Name = "Nhập lại mật khẩu")] public string ConfirmPassword { get; set; } = "";
 }

@@ -8,6 +8,6 @@
     <div class="stat-card"><span class="stat-icon green">₫</span><small>Doanh thu hoàn tất</small><b>@Model.Revenue.ToString("N0")đ</b><em>@Model.TotalOrders đơn hàng tổng cộng</em></div>
 </div>
 <div class="admin-dashboard-grid">
-    <section class="admin-panel"><div class="panel-heading"><div><span class="admin-kicker">SẢN PHẨM</span><h2>Sách được quan tâm</h2></div><a asp-action="Books">Quản lý sách →</a></div><div class="mini-book-list">@foreach (var book in Model.FeaturedBooks) { <div><img src="@book.CoverImage" alt="" /><span><b>@book.Title</b><small>@book.Category</small></span><strong>★ @book.Rating</strong></div>}</div></section>
+    <section class="admin-panel"><div class="panel-heading"><div><span class="admin-kicker">SẢN PHẨM</span><h2>Sách được quan tâm</h2></div><a asp-action="Books">Quản lý sách →</a></div><div class="mini-book-list">@foreach (var book in Model.FeaturedBooks) { <div><img src="@book.CoverImage" alt="" /><span><b>@book.Title</b><small>@book.Category</small></span><strong>@(book.ReviewCount > 0 ? $"★ {book.Rating:0.0}" : "☆ 0.0")</strong></div>}</div></section>
     <section class="admin-panel category-highlight"><span class="admin-kicker">BÁN CHẠY NHẤT</span><h2>Sản phẩm nổi bật</h2><div class="big-highlight">★</div><b>@Model.BestSellingBook</b><p>Danh mục bán chạy: <strong>@Model.BestSellingCategory</strong></p><a asp-action="Orders">Xem đơn hàng →</a></section>
 </div>

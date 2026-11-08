@@ -13,6 +13,10 @@ public static class DbInitializer
         await db.Database.ExecuteSqlRawAsync("""
             IF COL_LENGTH(N'dbo.Books', N'DiscountAmount') IS NULL
                 ALTER TABLE [dbo].[Books] ADD [DiscountAmount] decimal(18,2) NOT NULL CONSTRAINT [DF_Books_DiscountAmount] DEFAULT 0;
+            IF COL_LENGTH(N'dbo.Books', N'ISBN') IS NULL
+                ALTER TABLE [dbo].[Books] ADD [ISBN] nvarchar(20) NOT NULL CONSTRAINT [DF_Books_ISBN] DEFAULT N'';
+            IF COL_LENGTH(N'dbo.Books', N'ReviewCount') IS NULL
+                ALTER TABLE [dbo].[Books] ADD [ReviewCount] int NOT NULL CONSTRAINT [DF_Books_ReviewCount] DEFAULT 0;
             IF OBJECT_ID(N'dbo.DF_Books_CoverImage', N'D') IS NULL
                 ALTER TABLE [dbo].[Books] ADD CONSTRAINT [DF_Books_CoverImage] DEFAULT N'' FOR [CoverImage];
             IF OBJECT_ID(N'dbo.DF_Books_Description', N'D') IS NULL
@@ -86,6 +90,7 @@ public static class DbInitializer
                 DiscountPercent = book.DiscountPercent,
                 Stock = book.Stock,
                 Rating = book.Rating,
+                ISBN = book.ISBN,
                 CoverImage = book.CoverImage,
                 Description = book.Description
             }));
@@ -98,11 +103,21 @@ public static class DbInitializer
             {
                 Title = book.Title, Author = book.Author, Category = book.Category, Price = book.Price,
                 DiscountPercent = book.DiscountPercent, Stock = book.Stock, Rating = book.Rating,
-                CoverImage = book.CoverImage, Description = book.Description
+                ISBN = book.ISBN, CoverImage = book.CoverImage, Description = book.Description
             });
             db.Books.AddRange(newBooks);
             await db.SaveChangesAsync();
         }
+        await db.Database.ExecuteSqlRawAsync("""
+            UPDATE book
+            SET [ReviewCount] = (
+                    SELECT COUNT(*) FROM [dbo].[BookReviews] r WHERE r.[BookId] = book.[Id]),
+                [Rating] = COALESCE((
+                    SELECT AVG(CAST(r.[Rating] AS float))
+                    FROM [dbo].[BookReviews] r
+                    WHERE r.[BookId] = book.[Id]), 0)
+            FROM [dbo].[Books] book;
+            """);
         var oldCategoryMap = new Dictionary<string, string>
         {
             ["Kỹ năng & Kinh doanh"] = "Kĩ năng & Kinh doanh",
@@ -139,14 +154,21 @@ public static class DbInitializer
             .Where(feedback => feedback.CustomerEmail == "customer@latrang.vn")
             .ExecuteUpdateAsync(setters => setters.SetProperty(
                 feedback => feedback.CustomerEmail, "customer@groupnine.vn"));
-        await CreateUserAsync(userManager, "admin@groupnine.vn", "Admin123!", "Quản trị viên", "Admin", "0900000000");
-        await CreateUserAsync(userManager, "admin1@gmail.com", "12345678", "Quản trị viên 1", "Admin", "0900000001");
-        await CreateUserAsync(userManager, "admin2@gmail.com", "12345678", "Quản trị viên 2", "Admin", "0900000002");
-        await CreateUserAsync(userManager, "admin3@gmail.com", "12345678", "Quản trị viên 3", "Admin", "0900000003");
+        await CreateUserAsync(userManager, "admin@groupnine.vn", "Admin123456", "Quản trị viên", "Admin", "0900000000");
+        await CreateUserAsync(userManager, "admin1@gmail.com", "Admin123456", "Quản trị viên 1", "Admin", "0900000001");
+        await CreateUserAsync(userManager, "admin2@gmail.com", "Admin123456", "Quản trị viên 2", "Admin", "0900000002");
+        await CreateUserAsync(userManager, "admin3@gmail.com", "Admin123456", "Quản trị viên 3", "Admin", "0900000003");
         await CreateUserAsync(userManager, "customer@groupnine.vn", "Customer123!", "Khách hàng mẫu", "Customer", "0910000000");
-        await CreateUserAsync(userManager, "khachhangmau1@gmail.com", "12345678", "Khách hàng mẫu 1", "Customer", "0910000001");
-        await CreateUserAsync(userManager, "khachhangmau2@gmail.com", "12345678", "Khách hàng mẫu 2", "Customer", "0910000002");
-        await CreateUserAsync(userManager, "khachhangmau3@gmail.com", "12345678", "Khách hàng mẫu 3", "Customer", "0910000003");
+        await CreateUserAsync(userManager, "khachhangmau1@gmail.com", "CustomerOne123", "Khách hàng mẫu 1", "Customer", "0910000001");
+        await CreateUserAsync(userManager, "khachhangmau2@gmail.com", "CustomerTwo123", "Khách hàng mẫu 2", "Customer", "0910000002");
+        await CreateUserAsync(userManager, "khachhangmau3@gmail.com", "CustomerThree123", "Khách hàng mẫu 3", "Customer", "0910000003");
+        await MigrateDemoPasswordAsync(userManager, "admin@groupnine.vn", "Admin123456", "Admin123!", "12345678");
+        await MigrateDemoPasswordAsync(userManager, "admin1@gmail.com", "Admin123456", "AdminOne123", "12345678");
+        await MigrateDemoPasswordAsync(userManager, "admin2@gmail.com", "Admin123456", "AdminTwo123", "12345678");
+        await MigrateDemoPasswordAsync(userManager, "admin3@gmail.com", "Admin123456", "AdminThree123", "12345678");
+        await MigrateDemoPasswordAsync(userManager, "khachhangmau1@gmail.com", "CustomerOne123", "12345678");
+        await MigrateDemoPasswordAsync(userManager, "khachhangmau2@gmail.com", "CustomerTwo123", "12345678");
+        await MigrateDemoPasswordAsync(userManager, "khachhangmau3@gmail.com", "CustomerThree123", "12345678");
     }
 
     private static async Task CreateUserAsync(
@@ -188,5 +210,27 @@ public static class DbInitializer
         var result = await userManager.UpdateAsync(user);
         if (!result.Succeeded)
             throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
+    }
+
+    private static async Task MigrateDemoPasswordAsync(
+        UserManager<AppUser> userManager, string email, string newPassword, params string[] previousPasswords)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null || !await CheckAnyPasswordAsync(userManager, user, previousPasswords))
+            return;
+
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await userManager.ResetPasswordAsync(user, token, newPassword);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
+    }
+
+    private static async Task<bool> CheckAnyPasswordAsync(
+        UserManager<AppUser> userManager, AppUser user, IEnumerable<string> passwords)
+    {
+        foreach (var password in passwords)
+            if (await userManager.CheckPasswordAsync(user, password))
+                return true;
+        return false;
     }
 }

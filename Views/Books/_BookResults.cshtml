@@ -1,0 +1,34 @@
+@model sc.Models.BookCatalogViewModel
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="text-muted mb-0">Tìm thấy @Model.TotalCount sách</p>
+    <span class="text-muted small">Trang @Model.Page / @(Math.Max(1, Model.TotalPages))</span>
+</div>
+@if (Model.Books.Count == 0)
+{
+    <div class="alert alert-info">Không tìm thấy sách phù hợp.</div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var book in Model.Books)
+        {
+            @await Html.PartialAsync("_BookCard", book)
+        }
+    </div>
+}
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-4" aria-label="Phân trang sách">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                <a class="page-link" aria-label="Trang trước"
+                   href="@Url.Action("Index", new { q = Model.Query, category = Model.Categories, promotion = Model.Promotion, sort = Model.Sort, page = Model.Page - 1 })">Trước</a>
+            </li>
+            <li class="page-item disabled"><span class="page-link">@Model.Page / @Model.TotalPages</span></li>
+            <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                <a class="page-link" aria-label="Trang sau"
+                   href="@Url.Action("Index", new { q = Model.Query, category = Model.Categories, promotion = Model.Promotion, sort = Model.Sort, page = Model.Page + 1 })">Sau</a>
+            </li>
+        </ul>
+    </nav>
+}

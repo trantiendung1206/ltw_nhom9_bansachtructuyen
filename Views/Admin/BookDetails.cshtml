@@ -1,0 +1,28 @@
+@model Book
+@{
+    ViewData["Title"] = "Chi tiết sách";
+}
+<div class="admin-top">
+    <div><span class="admin-kicker">KHO SÁCH</span><h1>@Model.Title</h1></div>
+    <a class="admin-back" asp-action="Books">← Danh sách sách</a>
+</div>
+<section class="admin-panel">
+    <div class="row g-4">
+        <div class="col-md-3"><img src="@Model.CoverImage" alt="@Model.Title" class="img-fluid rounded" /></div>
+        <div class="col-md-9">
+            <dl class="row">
+                <dt class="col-sm-3">Mã sách</dt><dd class="col-sm-9">@Model.Id</dd>
+                <dt class="col-sm-3">Tác giả</dt><dd class="col-sm-9">@Model.Author</dd>
+                <dt class="col-sm-3">Danh mục</dt><dd class="col-sm-9">@Model.Category</dd>
+                <dt class="col-sm-3">ISBN</dt><dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.ISBN) ? "Chưa cập nhật" : Model.ISBN)</dd>
+                <dt class="col-sm-3">Đánh giá</dt><dd class="col-sm-9">@(Model.ReviewCount > 0 ? $"{Model.Rating:0.0} sao ({Model.ReviewCount} lượt)" : "0.0 sao (0 lượt)")</dd>
+                <dt class="col-sm-3">Giá</dt><dd class="col-sm-9">@Model.Price.ToString("N0")đ</dd>
+                <dt class="col-sm-3">Giá bán</dt><dd class="col-sm-9">@Model.SalePrice.ToString("N0")đ</dd>
+                <dt class="col-sm-3">Tồn kho</dt><dd class="col-sm-9">@Model.Stock</dd>
+            </dl>
+            <h2 class="h5">Mô tả</h2>
+            <div class="book-description">@Html.Raw(Model.Description)</div>
+            <a class="admin-primary d-inline-block mt-3" asp-action="EditBook" asp-route-id="@Model.Id">Sửa sách</a>
+        </div>
+    </div>
+</section>

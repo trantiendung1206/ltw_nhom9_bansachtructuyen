@@ -2,7 +2,7 @@
     ViewData["Title"] = "Trang chủ";
     var allBooks = ViewBag.Books as List<Book> ?? StoreData.Books;
     var featured = allBooks.Take(4).ToList();
-    var bestSellers = allBooks.OrderByDescending(b => b.Rating).Take(4).ToList();
+    var bestSellers = allBooks.Where(b => b.ReviewCount > 0).OrderByDescending(b => b.Rating).Take(4).ToList();
     var saleBooks = allBooks.Where(b => b.SalePrice < b.Price).Take(4).ToList();
     var quotes = new[] {
         "Một căn phòng không có sách giống như một cơ thể không có linh hồn.",
@@ -31,7 +31,14 @@
 </section>
 <section class="container section-block book-section">
     <div class="section-heading"><div><span class="eyebrow">ĐƯỢC ĐÁNH GIÁ CAO</span><h2>Sách được đánh giá cao</h2></div><a asp-controller="Books" asp-action="Index" asp-route-sort="rating">Xem tất cả →</a></div>
-    <div class="row g-4">@foreach (var book in bestSellers) { <partial name="_BookCard" model="book" /> }</div>
+    @if (bestSellers.Count > 0)
+    {
+        <div class="row g-4">@foreach (var book in bestSellers) { <partial name="_BookCard" model="book" /> }</div>
+    }
+    else
+    {
+        <p class="text-muted">Chưa có đánh giá cho sách.</p>
+    }
 </section>
 <section class="container section-block book-section">
     <div class="section-heading"><div><span class="eyebrow">GIÁ TỐT MỖI NGÀY</span><h2>Sách đang khuyến mãi</h2></div><a asp-controller="Books" asp-action="Index" asp-route-promotion="true">Xem tất cả →</a></div>

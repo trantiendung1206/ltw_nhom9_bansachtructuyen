@@ -101,8 +101,12 @@ migrations cho schema tùy biến.
 
 - Trang chủ theo nhận diện GroupNine, banner, sách đề xuất, sách xếp theo đánh
   giá và sách đang khuyến mãi.
-- Danh sách sách với tìm kiếm, lọc danh mục và sắp xếp theo giá/đánh giá.
+- Danh sách sách với tìm kiếm, lọc danh mục/khuyến mãi, phân trang server-side,
+  sắp xếp theo giá/đánh giá và cập nhật kết quả bằng AJAX qua REST API.
   Điều hướng “Được đánh giá cao” sắp theo điểm đánh giá.
+- REST API công khai `GET /api/books` (lọc, sắp xếp, phân trang) và
+  `GET /api/books/{id}` (chi tiết sách); Admin có thể POST/PUT/DELETE sách qua
+  API sau khi đăng nhập và gửi anti-forgery token từ `/api/books/antiforgery`.
 - Trang chi tiết sách, giá khuyến mãi, tồn kho và đánh giá sao.
 - Giỏ hàng lưu bằng Session, cập nhật số lượng và xóa sản phẩm.
 - Checkout lưu tên, số điện thoại và địa chỉ; tổng tiền hệ thống chỉ tính tiền sách.
@@ -113,6 +117,8 @@ migrations cho schema tùy biến.
   tồn kho được cộng lại cùng transaction và lịch sử hủy được ghi nhận.
 - Khách có thể đánh giá từng sách từ 1 đến 5 sao sau khi đơn hoàn tất.
 - Dashboard Admin có thống kê tổng quan; tồn kho được quản lý trong trang sách.
+- Quản lý sách Admin có CRUD, chi tiết, phân trang, validation server-side,
+  tải ảnh bìa có kiểm tra định dạng và rich-text editor với làm sạch HTML.
 - Responsive mobile, Bootstrap 5 và nhóm font sans-serif phổ biến (Arial/Roboto/Helvetica/Tahoma).
 
 ## Database và tài khoản demo
@@ -123,10 +129,10 @@ instance `.\\MSSQLSERVER01`; `DbInitializer` khởi tạo schema bằng
 `EnsureCreated` khi cần, thực hiện một số cập nhật schema có điều kiện và seed
 dữ liệu, role `Admin`/`Customer`. Đây không phải quy trình EF Core migrations.
 
-- Admin: `admin@groupnine.vn` / `Admin123!`
+- Admin: `admin@groupnine.vn` / `Admin123456`
 - Customer: `customer@groupnine.vn` / `Customer123!`
-- Admin mẫu: `admin1@gmail.com`, `admin2@gmail.com`, `admin3@gmail.com` / `12345678`
-- Khách hàng mẫu: `khachhangmau1@gmail.com`, `khachhangmau2@gmail.com`, `khachhangmau3@gmail.com` / `12345678`
+- Admin mẫu: `admin1@gmail.com`, `admin2@gmail.com`, `admin3@gmail.com` / `Admin123456`
+- Khách hàng mẫu: `khachhangmau1@gmail.com` / `CustomerOne123`; `khachhangmau2@gmail.com` / `CustomerTwo123`; `khachhangmau3@gmail.com` / `CustomerThree123`
 - Đăng nhập: `/Account/Login`
 - Đăng ký: `/Account/Register`
 - Quản trị sách: `/Admin` (chỉ role Admin truy cập được)
@@ -138,8 +144,10 @@ Schema Identity và nghiệp vụ được khởi tạo từ `AppDbContext`/`Ens
 còn dữ liệu mẫu và các cập nhật schema bổ sung do `DbInitializer` thực hiện.
 Connection string mặc định nằm trong `appsettings.json`. Khi ứng dụng khởi động,
 initializer đổi email và tên đăng nhập của hai tài khoản demo cũ từ miền
-`latrang.vn` sang `groupnine.vn`, giữ nguyên ID, vai trò và mật khẩu; nếu email
-mới đã thuộc tài khoản khác, initializer báo lỗi thay vì gộp tài khoản.
+`latrang.vn` sang `groupnine.vn`, giữ nguyên ID và vai trò; nếu email mới đã
+thuộc tài khoản khác, initializer báo lỗi thay vì gộp tài khoản. Mật khẩu mặc
+định cũ `12345678` của tài khoản demo phụ chỉ được nâng cấp nếu tài khoản vẫn
+còn dùng mật khẩu đó; mật khẩu do người dùng tự đổi sẽ được giữ nguyên.
 Email liên hệ trong góp ý của khách hàng demo cũng được cập nhật.
 
 ## Xử lý lỗi thường gặp
@@ -155,6 +163,7 @@ Email liên hệ trong góp ý của khách hàng demo cũng được cập nh�
 
 ## Lưu ý bảo mật
 
-Tài khoản demo chỉ phục vụ chấm bài/thử nghiệm. Khi triển khai thật, hãy đổi mật khẩu,
-không commit connection string có mật khẩu vào GitHub và dùng User Secrets hoặc biến
-môi trường.
+Mật khẩu mới phải dài ít nhất 8 ký tự, có chữ in hoa và chữ số; sau 5 lần đăng
+nhập sai liên tiếp, tài khoản bị khóa 15 phút. Tài khoản demo chỉ phục vụ chấm
+bài/thử nghiệm. Khi triển khai thật, hãy đổi mật khẩu, không commit connection
+string có mật khẩu vào GitHub và dùng User Secrets hoặc biến môi trường.

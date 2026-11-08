@@ -1,20 +1,62 @@
-@model Book
-@{ var editing = Model.Id > 0; ViewData["Title"] = editing ? "Sửa sách" : "Thêm sách"; }
-<div class="admin-top"><div><span class="admin-kicker">KHO SÁCH</span><h1>@ViewData["Title"]</h1></div><a class="admin-back" asp-action="Books">← Danh sách sách</a></div>
-@{ var categories = ViewBag.Categories as IEnumerable<Category> ?? []; }
-<form asp-action="@(editing ? "EditBook" : "CreateBook")" asp-route-id="@Model.Id" method="post" class="admin-panel admin-form">
+@model BookEditViewModel
+@{
+    var editing = Model.Id > 0;
+    ViewData["Title"] = editing ? "Sửa sách" : "Thêm sách";
+    var categories = ViewBag.Categories as IEnumerable<Category> ?? [];
+}
+<div class="admin-top">
+    <div><span class="admin-kicker">KHO SÁCH</span><h1>@ViewData["Title"]</h1></div>
+    <a class="admin-back" asp-action="Books">← Danh sách sách</a>
+</div>
+@if (TempData["Message"] is string message)
+{
+    <div class="alert alert-warning">@message</div>
+}
+<form asp-action="@(editing ? "EditBook" : "CreateBook")" asp-route-id="@Model.Id"
+      method="post" enctype="multipart/form-data" class="admin-panel admin-form">
     <div asp-validation-summary="All" class="text-danger"></div>
     <div class="form-grid">
-        <label>Tên sách<input asp-for="Title" required /><span asp-validation-for="Title" class="text-danger"></span></label>
-        <label>Tác giả<input asp-for="Author" required /><span asp-validation-for="Author" class="text-danger"></span></label>
-        <label>Danh mục<select asp-for="Category" required><option value="">-- Chọn danh mục --</option>@foreach (var category in categories) { <option value="@category.Name">@category.Name</option> }</select><span asp-validation-for="Category" class="text-danger"></span></label>
-        <label>Mã / ISBN hiển thị<input value="@(editing ? Model.Id.ToString() : "Tự động")" disabled /></label>
-        <label>Giá niêm yết<input asp-for="Price" type="number" min="0" required /><span asp-validation-for="Price" class="text-danger"></span></label>
+        <label>Tên sách<input asp-for="Title" required maxlength="200" /><span asp-validation-for="Title" class="text-danger"></span></label>
+        <label>Tác giả<input asp-for="Author" required maxlength="200" /><span asp-validation-for="Author" class="text-danger"></span></label>
+        <label>Danh mục
+            <select asp-for="Category" required>
+                <option value="">-- Chọn danh mục --</option>
+                @foreach (var category in categories)
+                {
+                    <option value="@category.Name">@category.Name</option>
+                }
+            </select>
+            <span asp-validation-for="Category" class="text-danger"></span>
+        </label>
+        <label>Mã sách<input value="@(editing ? Model.Id.ToString() : "Tự động")" disabled /></label>
+        <label>ISBN<input asp-for="ISBN" maxlength="20" placeholder="Để trống nếu chưa có ISBN" /><span asp-validation-for="ISBN" class="text-danger"></span></label>
+        <label>Giá niêm yết<input asp-for="Price" type="number" min="0" step="0.01" required /><span asp-validation-for="Price" class="text-danger"></span></label>
         <label>Giảm giá (%)<input asp-for="DiscountPercent" type="number" min="0" max="100" /><span asp-validation-for="DiscountPercent" class="text-danger"></span></label>
-        <label>Giảm trực tiếp (VNĐ)<input asp-for="DiscountAmount" type="number" min="0" /><span asp-validation-for="DiscountAmount" class="text-danger"></span></label>
+        <label>Giảm trực tiếp (VNĐ)<input asp-for="DiscountAmount" type="number" min="0" step="0.01" /><span asp-validation-for="DiscountAmount" class="text-danger"></span></label>
         <label>Tồn kho<input asp-for="Stock" type="number" min="0" required /><span asp-validation-for="Stock" class="text-danger"></span></label>
-        <label>Ảnh bìa URL<input asp-for="CoverImage" /><span asp-validation-for="CoverImage" class="text-danger"></span></label>
-        <label class="full">Mô tả<textarea asp-for="Description" rows="5"></textarea><span asp-validation-for="Description" class="text-danger"></span></label>
+        <label class="full">Ảnh bìa tải lên (PNG, JPEG, WebP; tối đa 5 MB)
+            <input asp-for="CoverUpload" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" />
+            <span asp-validation-for="CoverUpload" class="text-danger"></span>
+        </label>
+        <label class="full">Hoặc URL / đường dẫn ảnh bìa<input asp-for="CoverImage" maxlength="1000" /><span asp-validation-for="CoverImage" class="text-danger"></span></label>
+        @if (editing && !string.IsNullOrWhiteSpace(Model.CoverImage))
+        {
+            <div class="full"><img src="@Model.CoverImage" alt="Ảnh bìa hiện tại" style="max-height:160px;max-width:120px" /></div>
+        }
+        <div class="full">
+            <label for="description-editor">Mô tả sách</label>
+            <div class="btn-toolbar gap-1 mb-2" role="toolbar" aria-label="Định dạng mô tả">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-editor-command="bold"><strong>B</strong></button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-editor-command="italic"><em>I</em></button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-editor-command="insertUnorderedList">Danh sách</button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-editor-command="formatBlock" data-editor-value="<blockquote>">Trích dẫn</button>
+            </div>
+            <div id="description-editor" class="form-control" contenteditable="true" role="textbox"
+                 aria-multiline="true" style="min-height:180px;overflow:auto" hidden></div>
+            <textarea asp-for="Description" id="description-source" class="form-control" rows="6"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
     </div>
     <div class="form-actions"><a class="admin-back" asp-action="Books">Hủy</a><button type="submit" class="admin-primary">Lưu thông tin</button></div>
 </form>
+<script src="~/js/book-editor.js" asp-append-version="true" defer></script>

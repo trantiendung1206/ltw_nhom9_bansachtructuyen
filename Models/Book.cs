@@ -5,22 +5,72 @@ namespace sc.Models;
 public sealed class Book
 {
     public int Id { get; set; }
+    [Required, StringLength(200)]
     public string Title { get; set; } = "";
+    [Required, StringLength(200)]
     public string Author { get; set; } = "";
+    [Required, StringLength(100)]
     public string Category { get; set; } = "";
+    [StringLength(20)]
+    public string ISBN { get; set; } = "";
+    [Range(typeof(decimal), "0", "9999999999999999.99")]
     public decimal Price { get; set; }
+    [Range(0, 100)]
     public int DiscountPercent { get; set; }
+    [Range(typeof(decimal), "0", "9999999999999999.99")]
     public decimal DiscountAmount { get; set; }
+    [Range(0, int.MaxValue)]
     public int Stock { get; set; }
     public double Rating { get; set; }
+    public int ReviewCount { get; set; }
+    [StringLength(1000)]
     public string CoverImage { get; set; } = "";
+    [StringLength(20000)]
     public string Description { get; set; } = "";
     public decimal SalePrice => Math.Max(0, Price - (DiscountAmount > 0 ? DiscountAmount : Price * DiscountPercent / 100));
+}
+
+public sealed class BookEditViewModel
+{
+    public int Id { get; set; }
+
+    [Required, StringLength(200)]
+    public string Title { get; set; } = "";
+
+    [Required, StringLength(200)]
+    public string Author { get; set; } = "";
+
+    [Required, StringLength(100)]
+    public string Category { get; set; } = "";
+
+    [StringLength(20)]
+    public string ISBN { get; set; } = "";
+
+    [Range(typeof(decimal), "0", "9999999999999999.99")]
+    public decimal Price { get; set; }
+
+    [Range(0, 100)]
+    public int DiscountPercent { get; set; }
+
+    [Range(typeof(decimal), "0", "9999999999999999.99")]
+    public decimal DiscountAmount { get; set; }
+
+    [Range(0, int.MaxValue)]
+    public int Stock { get; set; }
+
+    [StringLength(1000)]
+    public string CoverImage { get; set; } = "";
+
+    [StringLength(20000)]
+    public string Description { get; set; } = "";
+
+    public IFormFile? CoverUpload { get; set; }
 }
 
 public sealed class Category
 {
     public int Id { get; set; }
+    [Required, StringLength(100)]
     public string Name { get; set; } = "";
     public bool IsActive { get; set; } = true;
 }
@@ -73,12 +123,13 @@ public sealed class OrderStatusHistory
 public sealed class ReturnRequest
 {
     public int Id { get; set; }
+    [Range(1, int.MaxValue)]
     public int OrderId { get; set; }
     public string UserId { get; set; } = "";
     public string CustomerEmail { get; set; } = "";
     public string CustomerPhone { get; set; } = "";
     public string RequestType { get; set; } = "Hoàn tiền";
-    [Required]
+    [Required, StringLength(1000)]
     public string Reason { get; set; } = "";
     public string Status { get; set; } = "Chờ xác nhận";
     public string RejectionReason { get; set; } = "";
@@ -91,9 +142,9 @@ public sealed class CustomerFeedback
 {
     public int Id { get; set; }
     public string UserId { get; set; } = "";
-    [Required]
+    [Required, StringLength(200)]
     public string Subject { get; set; } = "";
-    [Required]
+    [Required, StringLength(2000)]
     public string Message { get; set; } = "";
     public string CustomerEmail { get; set; } = "";
     public string Status { get; set; } = "Chưa xử lý";
@@ -114,9 +165,13 @@ public sealed class AdminStatisticsViewModel
 
 public sealed class PromotionViewModel
 {
+    [StringLength(200)]
     public string? Query { get; set; }
+    [StringLength(100)]
     public string? Category { get; set; }
+    [Range(0, 100)]
     public int DiscountPercent { get; set; }
+    [Range(typeof(decimal), "0", "9999999999999999.99")]
     public decimal DiscountAmount { get; set; }
     public List<Book> Books { get; set; } = [];
 }
@@ -130,13 +185,68 @@ public sealed class CartItem
 
 public sealed class CheckoutViewModel
 {
+    [Required, StringLength(200)]
     public string ReceiverName { get; set; } = "";
+    [Required, Phone, StringLength(50)]
     public string Phone { get; set; } = "";
+    [Required, StringLength(500)]
     public string Address { get; set; } = "";
+    [StringLength(50)]
     public string CouponCode { get; set; } = "";
     public List<CartItem> Items { get; set; } = [];
     public decimal Subtotal => Items.Sum(item => item.Subtotal);
     public decimal Total => Subtotal;
+}
+
+public sealed class ReturnRequestInput
+{
+    [Range(1, int.MaxValue)]
+    public int OrderId { get; set; }
+
+    [Required, StringLength(1000)]
+    public string Reason { get; set; } = "";
+}
+
+public sealed class CustomerFeedbackInput
+{
+    [Required, StringLength(200)]
+    public string Subject { get; set; } = "";
+
+    [Required, StringLength(2000)]
+    public string Message { get; set; } = "";
+}
+
+public sealed class BookApiWriteModel
+{
+    [Required, StringLength(200)]
+    public string Title { get; set; } = "";
+
+    [Required, StringLength(200)]
+    public string Author { get; set; } = "";
+
+    [Required, StringLength(100)]
+    public string Category { get; set; } = "";
+
+    [StringLength(20)]
+    public string ISBN { get; set; } = "";
+
+    [Range(typeof(decimal), "0", "9999999999999999.99")]
+    public decimal Price { get; set; }
+
+    [Range(0, 100)]
+    public int DiscountPercent { get; set; }
+
+    [Range(typeof(decimal), "0", "9999999999999999.99")]
+    public decimal DiscountAmount { get; set; }
+
+    [Range(0, int.MaxValue)]
+    public int Stock { get; set; }
+
+    [StringLength(1000)]
+    public string CoverImage { get; set; } = "";
+
+    [StringLength(20000)]
+    public string Description { get; set; } = "";
 }
 
 public static class StoreData

@@ -16,7 +16,7 @@
         <a class="admin-logo" asp-controller="Admin" asp-action="Index"><span>GN</span><b>GroupNine</b><small>QUẢN TRỊ HỆ THỐNG</small></a>
         <nav>
             <a class="@(currentController == "Admin" && currentAction == "Index" ? "active" : "")" asp-controller="Admin" asp-action="Index">▦ <span>Thống kê hệ thống</span></a>
-            <a class="@(currentAction == "Books" || currentAction == "CreateBook" || currentAction == "EditBook" ? "active" : "")" asp-controller="Admin" asp-action="Books">▤ <span>Quản lý sách</span></a>
+            <a class="@(currentAction == "Books" || currentAction == "CreateBook" || currentAction == "EditBook" || currentAction == "BookDetails" ? "active" : "")" asp-controller="Admin" asp-action="Books">▤ <span>Quản lý sách</span></a>
             <a class="@(currentAction == "Categories" || currentAction == "CategoryBooks" ? "active" : "")" asp-controller="Admin" asp-action="Categories">▥ <span>Danh mục sách</span></a>
             <a class="@(currentAction == "Orders" || currentAction == "OrderDetails" ? "active" : "")" asp-controller="Admin" asp-action="Orders">▣ <span>Quản lý đơn hàng</span></a>
             <a class="@(currentAction == "Returns" ? "active" : "")" asp-controller="Admin" asp-action="Returns">↩ <span>Xử lý trả hàng</span></a>

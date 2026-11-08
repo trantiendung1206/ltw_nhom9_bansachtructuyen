@@ -1,29 +1,73 @@
-@model List<Book>
-@{ var promotion = (bool?)ViewBag.Promotion == true; ViewData["Title"] = promotion ? "Sách đang khuyến mãi" : "Tất cả sách"; }
-<div class="container page-heading"><span class="eyebrow">GÓC SÁCH NHỎ</span><h1>@ViewData["Title"]</h1><p>@(promotion ? "Khám phá các danh mục sách đang có giá ưu đãi." : "Tìm cuốn sách phù hợp với hành trình của bạn.")</p></div>
-<div class="container catalog-layout">
-    <aside class="filter-box">
-        <form asp-action="Index" method="get" class="catalog-filter-form">
-            <input type="hidden" name="q" value="@ViewBag.Query" />
-            <input type="hidden" name="promotion" value="@promotion.ToString().ToLowerInvariant()" />
-            <div class="filter-heading"><b>@(promotion ? "Danh mục khuyến mãi" : "Lọc sản phẩm")</b><a asp-action="Index" asp-route-promotion="@promotion">Xóa lọc</a></div>
-            <div class="filter-group">
-                <span class="filter-label">Danh mục</span>
-                @foreach (var cat in StoreData.Categories)
+@model sc.Models.BookCatalogViewModel
+@{
+    ViewData["Title"] = "Danh sách sách";
+}
+
+<section class="container py-4">
+    <header class="catalog-heading">
+        <div>
+            <span class="catalog-eyebrow">GÓC ĐỌC CỦA BẠN</span>
+            <h1>Khám phá sách</h1>
+            <p>Tìm cuốn sách phù hợp với bạn.</p>
+        </div>
+        <span class="catalog-heading-icon" aria-hidden="true"><span></span></span>
+    </header>
+
+    <form id="book-catalog-filter" asp-controller="Books" asp-action="Index" method="get" class="catalog-filter">
+        <div class="catalog-search-row">
+            <label class="catalog-search-box" for="catalog-query">
+                <span class="catalog-search-icon" aria-hidden="true"></span>
+                <input id="catalog-query" name="q" value="@Model.Query" type="search"
+                       placeholder="Tìm theo tên sách hoặc tác giả..." autocomplete="off">
+            </label>
+        </div>
+
+        <fieldset class="catalog-categories">
+            <legend>Danh mục <span>Chọn một hoặc nhiều mục</span></legend>
+            <div class="catalog-category-options">
+                @foreach (var category in StoreData.Categories)
                 {
-                    var isChecked = ((string[]?)ViewBag.Categories)?.Contains(cat) == true;
-                    <label class="filter-check"><input type="checkbox" name="category" value="@cat" checked="@isChecked" /><span class="checkmark"></span><span>@cat</span></label>
+                    var categoryId = $"catalog-category-{Array.IndexOf(StoreData.Categories, category)}";
+                    <label class="catalog-category-chip" for="@categoryId">
+                        <input id="@categoryId" name="category" type="checkbox" value="@category"
+                               checked="@Model.Categories.Contains(category)">
+                        <span class="catalog-check" aria-hidden="true"></span>
+                        <span>@category</span>
+                    </label>
                 }
             </div>
-            <div class="filter-group">
-                <span class="filter-label">Sắp xếp theo</span>
-                <label class="filter-check"><input type="radio" name="sort" value="new" checked="@((string?)ViewBag.Sort == "new")" /><span class="radiomark"></span><span>Mới nhất</span></label>
-                <label class="filter-check"><input type="radio" name="sort" value="rating" checked="@((string?)ViewBag.Sort == "rating")" /><span class="radiomark"></span><span>Đánh giá cao</span></label>
-                <label class="filter-check"><input type="radio" name="sort" value="price-asc" checked="@((string?)ViewBag.Sort == "price-asc")" /><span class="radiomark"></span><span>Giá thấp đến cao</span></label>
-                <label class="filter-check"><input type="radio" name="sort" value="price-desc" checked="@((string?)ViewBag.Sort == "price-desc")" /><span class="radiomark"></span><span>Giá cao đến thấp</span></label>
+        </fieldset>
+
+        <div class="catalog-options">
+            <label class="catalog-sort" for="catalog-sort">
+                <span>Sắp xếp theo</span>
+                <select id="catalog-sort" name="sort">
+                    <option value="new" selected="@(Model.Sort == "new")">Mới nhất</option>
+                    <option value="rating" selected="@(Model.Sort == "rating")">Đánh giá cao</option>
+                    <option value="price-asc" selected="@(Model.Sort == "price-asc")">Giá tăng dần</option>
+                    <option value="price-desc" selected="@(Model.Sort == "price-desc")">Giá giảm dần</option>
+                </select>
+            </label>
+
+            <label class="catalog-promotion" for="catalog-promotion">
+                <input id="catalog-promotion" name="promotion" type="checkbox" value="true"
+                       checked="@Model.Promotion">
+                <span class="catalog-toggle" aria-hidden="true"></span>
+                <span>Đang khuyến mãi</span>
+            </label>
+
+            <div class="catalog-form-actions">
+                <a class="catalog-reset" asp-controller="Books" asp-action="Index">Xóa bộ lọc</a>
+                <button class="catalog-submit catalog-apply" type="submit">Tìm sách</button>
             </div>
-            <button type="submit" class="filter-submit">Áp dụng bộ lọc</button>
-        </form>
-    </aside>
-    <div class="flex-grow-1"><div class="catalog-toolbar"><span>@Model.Count cuốn sách</span><span>@(((string[]?)ViewBag.Categories)?.Length > 0 ? string.Join(", ", (string[])ViewBag.Categories) : "Tất cả danh mục")</span></div><div class="row g-4">@foreach (var book in Model) { <partial name="_BookCard" model="book" /> }</div>@if (Model.Count == 0) { <div class="empty-state">Không tìm thấy cuốn sách phù hợp.</div>}</div>
-</div>
+        </div>
+    </form>
+
+    <div id="book-results" data-api-url="@Url.Content("~/api/books")"
+         data-authenticated="@User.Identity?.IsAuthenticated.ToString().ToLowerInvariant()">
+        @await Html.PartialAsync("_BookResults", Model)
+    </div>
+    @Html.AntiForgeryToken()
+</section>
+
+<script src="~/js/book-catalog.js" asp-append-version="true" defer></script>

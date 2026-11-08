@@ -116,8 +116,13 @@ public class OrdersController(AppDbContext db) : Controller
 
         await db.SaveChangesAsync();
         var average = await db.BookReviews.Where(item => item.BookId == bookId).AverageAsync(item => (double?)item.Rating) ?? rating;
+        var reviewCount = await db.BookReviews.CountAsync(item => item.BookId == bookId);
         var book = await db.Books.FindAsync(bookId);
-        if (book is not null) book.Rating = average;
+        if (book is not null)
+        {
+            book.Rating = average;
+            book.ReviewCount = reviewCount;
+        }
         await db.SaveChangesAsync();
         TempData["Message"] = "Đã lưu đánh giá của bạn.";
         return RedirectToAction(nameof(Details), new { id = orderId });
