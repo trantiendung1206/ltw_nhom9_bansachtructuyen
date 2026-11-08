@@ -85,8 +85,9 @@ migrations cho schema tùy biến.
 
 ## Đã triển khai
 
-- Trang chủ theo nhận diện GroupNine, banner, sách đề xuất, sách xếp theo đánh
-  giá và sách đang khuyến mãi.
+- Trang chủ theo nhận diện GroupNine, banner, sách đề xuất ngẫu nhiên khi chưa
+  có lịch sử mua hàng/giỏ hàng và đề xuất theo danh mục đã tương tác, sách xếp
+  theo đánh giá và sách đang khuyến mãi.
 - Danh sách sách với tìm kiếm, lọc danh mục/khuyến mãi, phân trang server-side,
   sắp xếp theo giá/đánh giá và cập nhật kết quả bằng AJAX qua REST API.
   Điều hướng “Được đánh giá cao” sắp theo điểm đánh giá.

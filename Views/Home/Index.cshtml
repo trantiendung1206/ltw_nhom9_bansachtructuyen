@@ -1,7 +1,7 @@
 @{
     ViewData["Title"] = "Trang chủ";
     var allBooks = ViewBag.Books as List<Book> ?? StoreData.Books;
-    var featured = allBooks.Take(4).ToList();
+    var featured = ViewBag.FeaturedBooks as List<Book> ?? allBooks.Take(4).ToList();
     var bestSellers = allBooks.Where(b => b.ReviewCount > 0).OrderByDescending(b => b.Rating).Take(4).ToList();
     var saleBooks = allBooks.Where(b => b.SalePrice < b.Price).Take(4).ToList();
     var quotes = new[] {

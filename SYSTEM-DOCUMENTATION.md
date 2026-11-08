@@ -162,9 +162,13 @@ khuyến mãi.
 
 ### Storefront
 
-- **Trang chủ:** hiển thị nhóm sách đề xuất, nhóm sách được đánh giá cao, sách
-  có giảm giá và một câu trích dẫn được chọn ngẫu nhiên. Nhóm sách được đánh
-  giá cao chỉ gồm sách đã có đánh giá và sắp theo điểm trung bình.
+- **Trang chủ:** nhóm sách đề xuất được chọn ngẫu nhiên nếu khách chưa có sách
+  trong giỏ hoặc đơn hàng chưa bị hủy; nếu đã tương tác, nhóm này ưu tiên sách
+  cùng danh mục với sách trong giỏ và đơn hàng. Sách đã có trong giỏ/đơn hàng
+  được loại khỏi đề xuất khi còn sách khác cùng danh mục; nếu không còn sách
+  khác, hệ thống hiển thị lại sách trong danh mục đó. Trang cũng có nhóm sách
+  được đánh giá cao, sách có giảm giá và một câu trích dẫn ngẫu nhiên. Nhóm
+  được đánh giá cao chỉ gồm sách đã có đánh giá và sắp theo điểm trung bình.
 - **Danh sách `/Books`:** tìm theo tên sách hoặc tác giả; có thể lọc nhiều danh
   mục, lọc sách có giảm giá và sắp xếp mới nhất, giá tăng/giảm hoặc đánh giá.
   “Mới nhất” sắp theo ID giảm dần. Truy vấn được lọc, sắp xếp và phân trang ở
