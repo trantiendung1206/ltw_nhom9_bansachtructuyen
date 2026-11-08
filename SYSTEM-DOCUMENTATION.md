@@ -69,7 +69,7 @@ Khi ứng dụng khởi động, `DbInitializer` tiếp tục:
    `AppDbContext`.
 2. Tạo/bổ sung các bảng và cột nghiệp vụ còn thiếu nếu database đã tồn tại từ
    phiên bản cũ.
-3. Chuẩn hóa trạng thái đơn hàng và hình thức giao hàng.
+3. Chuẩn hóa trạng thái đơn hàng.
 4. Xóa bảng `Wishlists` cũ nếu bảng này còn tồn tại; giỏ hàng hiện chỉ dùng
    Session, không lưu trong database.
 5. Seed 7 danh mục cố định và 33 sách mẫu.
@@ -226,12 +226,19 @@ Người dùng nhập:
 - Tên người nhận.
 - Số điện thoại.
 - Địa chỉ giao hàng.
-- Hình thức giao hàng tận nơi.
 
 Hệ thống tính:
 
 - Tạm tính theo giá sau khuyến mãi.
-- Không cộng phí vận chuyển; tổng tiền chỉ tính tiền sách.
+- Tổng tiền hàng chỉ tính tiền sách sau khuyến mãi; hệ thống không tính, thu
+  hoặc lưu phí vận chuyển.
+
+Sau khi đơn được tạo, nhân viên dùng tên, số điện thoại và địa chỉ trong đơn
+để đặt một đơn COD với đơn vị giao hàng bên ngoài như be hoặc Grab. Shipper
+ứng trước tiền hàng cho nhân viên; khi giao thành công, khách thanh toán tiền
+hàng và phí giao hàng trực tiếp cho shipper. Nhân viên chủ động báo trước
+phí giao hàng cho khách qua số điện thoại hoặc email. Phí giao hàng bên ngoài
+không thuộc doanh thu hay tổng tiền của đơn trong hệ thống.
 
 Nút **Đặt hàng**:
 
@@ -309,7 +316,8 @@ Trang `/Admin` hiển thị:
 - **Sửa**: cập nhật tên, tác giả, danh mục, giá, giảm giá, tồn kho, ảnh và mô
   tả.
 - **Xóa**: xóa sách khỏi database sau xác nhận trên giao diện.
-- **Cập nhật trạng thái/kho**: thao tác tồn kho theo nghiệp vụ hiện có.
+- **Cập nhật tồn kho**: sửa số lượng tồn kho thực tế; sách không có nghiệp vụ
+  ẩn/hiện và vẫn xuất hiện trong danh sách khi hết hàng.
 - **Lưu/Xác nhận**: gửi thay đổi lên server.
 
 Khuyến mãi hỗ trợ hai dạng:
@@ -366,8 +374,8 @@ mục để mở danh sách sách.
 
 Đường dẫn: `/Admin/Returns`
 
-- Tìm kiếm theo mã yêu cầu, mã đơn, tên khách, số điện thoại hoặc email.
-- Mã yêu cầu và mã đơn hiển thị dạng dễ đọc.
+- Tìm kiếm theo mã đơn, tên khách, số điện thoại hoặc email.
+- Mã đơn hiển thị dạng dễ đọc.
 - Xem lý do, thời gian và trạng thái yêu cầu hoàn tiền.
 - Xem trực tiếp email và số điện thoại khách để liên hệ.
 - **Chấp nhận**: chuyển `Chờ xác nhận` thành `Chấp nhận yêu cầu trả hàng`,
@@ -407,9 +415,10 @@ Xem sách
   → Đăng nhập
   → Thêm vào giỏ
   → Kiểm tra số lượng
-  → Nhập thông tin giao hàng
+  → Nhập tên, số điện thoại và địa chỉ nhận
   → Đặt hàng
   → Trừ kho và tạo đơn
+  → Nhân viên đặt COD qua đơn vị giao hàng bên ngoài
   → Admin cập nhật trạng thái
   → Khách theo dõi đơn
 ```
@@ -447,7 +456,7 @@ nghiệp vụ sau:
 |---|---|---|
 | `Books` | `Id`, `Title`, `Author`, `Category`, `Price`, `DiscountPercent`, `DiscountAmount`, `Stock`, `Rating`, `CoverImage`, `Description` | Danh mục sách và tồn kho; `Price`, `DiscountAmount` dùng `decimal(18,2)` |
 | `Categories` | `Id`, `Name`, `IsActive` | 7 danh mục hệ thống; không có CRUD danh mục trên Admin |
-| `Orders` | `Id`, `UserId`, `ReceiverName`, `Phone`, `Address`, `DeliveryMethod`, `Status`, `CancellationReason`, `Total`, `RefundedAmount`, `CreatedAt` | Đơn hàng; `UserId` có thể rỗng; `RefundedAmount` dùng để trừ doanh thu khi hoàn hàng; giao hàng chỉ dùng `Ship` |
+| `Orders` | `Id`, `UserId`, `ReceiverName`, `Phone`, `Address`, `Status`, `CancellationReason`, `Total`, `RefundedAmount`, `CreatedAt` | Đơn hàng và thông tin để nhân viên đặt giao hàng bên ngoài; `UserId` có thể rỗng; `Total` chỉ là tiền hàng; `RefundedAmount` dùng để trừ doanh thu khi hoàn hàng |
 | `OrderItems` | `Id`, `OrderId`, `BookId`, `BookTitle`, `Quantity`, `UnitPrice` | Các dòng trong đơn; `OrderId` xóa dây chuyền theo `Orders` |
 | `OrderStatusHistories` | `Id`, `OrderId`, `OccurredAt`, `Action` | Lịch sử trạng thái; `OrderId` xóa dây chuyền theo `Orders` |
 | `ReturnRequests` | `Id`, `OrderId`, `UserId`, `CustomerEmail`, `CustomerPhone`, `RequestType`, `Reason`, `Status`, `RejectionReason`, `CreatedAt`, `ResolvedAt` | Yêu cầu hoàn tiền hoặc từ chối; `OrderId` xóa dây chuyền theo `Orders` |

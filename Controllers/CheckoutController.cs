@@ -34,7 +34,6 @@ public class CheckoutController(AppDbContext db) : Controller
             ReceiverName = model.ReceiverName,
             Phone = model.Phone,
             Address = model.Address,
-            DeliveryMethod = model.DeliveryMethod,
             Total = model.Subtotal,
             Status = "Cần xác nhận"
         };

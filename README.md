@@ -84,7 +84,9 @@ dotnet run
 - Danh sách sách với tìm kiếm, lọc danh mục và sắp xếp theo giá/đánh giá.
 - Trang chi tiết sách, giá khuyến mãi, tồn kho và đánh giá sao.
 - Giỏ hàng lưu bằng Session, cập nhật số lượng và xóa sản phẩm.
-- Checkout COD giao tận nơi, tổng tiền chỉ tính tiền sách.
+- Checkout lưu tên, số điện thoại và địa chỉ; tổng tiền hệ thống chỉ tính tiền sách.
+  Nhân viên dùng thông tin này để đặt COD qua đơn vị giao hàng bên ngoài; phí
+  giao hàng do khách thanh toán trực tiếp cho shipper và không thuộc hệ thống.
 - Trừ tồn kho sau khi đặt hàng và thông báo mã đơn hàng; trạng thái ban đầu là `Cần xác nhận`.
 - Dashboard quản lý mẫu với thống kê và bảng quản lý tồn kho.
 - Responsive mobile, Bootstrap 5 và nhóm font sans-serif phổ biến (Arial/Roboto/Helvetica/Tahoma).

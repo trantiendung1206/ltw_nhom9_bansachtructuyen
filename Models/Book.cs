@@ -32,7 +32,6 @@ public sealed class Order
     public string ReceiverName { get; set; } = "";
     public string Phone { get; set; } = "";
     public string Address { get; set; } = "";
-    public string DeliveryMethod { get; set; } = "Ship";
     public string Status { get; set; } = "Cần xác nhận";
     public string CancellationReason { get; set; } = "";
     public decimal Total { get; set; }
@@ -123,11 +122,9 @@ public sealed class CheckoutViewModel
     public string ReceiverName { get; set; } = "";
     public string Phone { get; set; } = "";
     public string Address { get; set; } = "";
-    public string DeliveryMethod { get; set; } = "Ship";
     public string CouponCode { get; set; } = "";
     public List<CartItem> Items { get; set; } = [];
     public decimal Subtotal => Items.Sum(item => item.Subtotal);
-    public decimal ShippingFee => 0;
     public decimal Total => Subtotal;
 }
 

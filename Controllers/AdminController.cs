@@ -156,9 +156,6 @@ public class AdminController(AppDbContext db) : Controller
     [HttpPost("Books/Delete/{id}"), ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteBook(int id) { var book = await db.Books.FindAsync(id); if (book is not null) { db.Books.Remove(book); await db.SaveChangesAsync(); } return RedirectToAction(nameof(Books)); }
 
-    [HttpPost("Books/Toggle/{id}"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> Toggle(int id) { var book = await db.Books.FindAsync(id); if (book is not null) { book.Stock = book.Stock == 0 ? 10 : 0; await db.SaveChangesAsync(); } return RedirectToAction(nameof(Books)); }
-
     [HttpGet("Categories")]
     public async Task<IActionResult> Categories()
     {
