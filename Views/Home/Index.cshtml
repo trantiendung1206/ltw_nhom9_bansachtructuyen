@@ -30,7 +30,7 @@
     <div class="row g-4">@foreach (var book in featured) { <partial name="_BookCard" model="book" /> }</div>
 </section>
 <section class="container section-block book-section">
-    <div class="section-heading"><div><span class="eyebrow">ĐƯỢC ĐỌC NHIỀU NHẤT</span><h2>Sách bán chạy</h2></div><a asp-controller="Books" asp-action="Index" asp-route-sort="rating">Xem tất cả →</a></div>
+    <div class="section-heading"><div><span class="eyebrow">ĐƯỢC ĐÁNH GIÁ CAO</span><h2>Sách được đánh giá cao</h2></div><a asp-controller="Books" asp-action="Index" asp-route-sort="rating">Xem tất cả →</a></div>
     <div class="row g-4">@foreach (var book in bestSellers) { <partial name="_BookCard" model="book" /> }</div>
 </section>
 <section class="container section-block book-section">

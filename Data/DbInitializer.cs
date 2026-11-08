@@ -133,11 +133,17 @@ public static class DbInitializer
                 await roleManager.CreateAsync(new IdentityRole(role));
 
         var userManager = services.GetRequiredService<UserManager<AppUser>>();
-        await CreateUserAsync(userManager, "admin@latrang.vn", "Admin123!", "Quản trị viên", "Admin", "0900000000");
+        await RenameDemoUserAsync(userManager, "admin@latrang.vn", "admin@groupnine.vn");
+        await RenameDemoUserAsync(userManager, "customer@latrang.vn", "customer@groupnine.vn");
+        await db.CustomerFeedbacks
+            .Where(feedback => feedback.CustomerEmail == "customer@latrang.vn")
+            .ExecuteUpdateAsync(setters => setters.SetProperty(
+                feedback => feedback.CustomerEmail, "customer@groupnine.vn"));
+        await CreateUserAsync(userManager, "admin@groupnine.vn", "Admin123!", "Quản trị viên", "Admin", "0900000000");
         await CreateUserAsync(userManager, "admin1@gmail.com", "12345678", "Quản trị viên 1", "Admin", "0900000001");
         await CreateUserAsync(userManager, "admin2@gmail.com", "12345678", "Quản trị viên 2", "Admin", "0900000002");
         await CreateUserAsync(userManager, "admin3@gmail.com", "12345678", "Quản trị viên 3", "Admin", "0900000003");
-        await CreateUserAsync(userManager, "customer@latrang.vn", "Customer123!", "Khách hàng mẫu", "Customer", "0910000000");
+        await CreateUserAsync(userManager, "customer@groupnine.vn", "Customer123!", "Khách hàng mẫu", "Customer", "0910000000");
         await CreateUserAsync(userManager, "khachhangmau1@gmail.com", "12345678", "Khách hàng mẫu 1", "Customer", "0910000001");
         await CreateUserAsync(userManager, "khachhangmau2@gmail.com", "12345678", "Khách hàng mẫu 2", "Customer", "0910000002");
         await CreateUserAsync(userManager, "khachhangmau3@gmail.com", "12345678", "Khách hàng mẫu 3", "Customer", "0910000003");
@@ -163,5 +169,24 @@ public static class DbInitializer
         }
         if (!await userManager.IsInRoleAsync(user, role))
             await userManager.AddToRoleAsync(user, role);
+    }
+
+    private static async Task RenameDemoUserAsync(
+        UserManager<AppUser> userManager, string oldEmail, string newEmail)
+    {
+        var user = await userManager.FindByEmailAsync(oldEmail);
+        if (user is null)
+            return;
+
+        var existingUser = await userManager.FindByEmailAsync(newEmail);
+        if (existingUser is not null && existingUser.Id != user.Id)
+            throw new InvalidOperationException(
+                $"Cannot rename demo account '{oldEmail}' because '{newEmail}' is already in use.");
+
+        user.Email = newEmail;
+        user.UserName = newEmail;
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
     }
 }

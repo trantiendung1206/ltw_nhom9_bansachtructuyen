@@ -10,16 +10,17 @@
     tạo database.
 */
 
-IF DB_ID(N'LatTrangBookStore') IS NULL
+DECLARE @DatabaseExists bit = CASE WHEN DB_ID(N'GroupNine') IS NULL THEN 0 ELSE 1 END;
+IF @DatabaseExists = 0
 BEGIN
-    CREATE DATABASE [LatTrangBookStore];
+    CREATE DATABASE [GroupNine];
 END
 GO
 
-USE [LatTrangBookStore];
+USE [GroupNine];
 GO
 
 SELECT
     DB_NAME() AS [DatabaseName],
-    N'Đã tạo database; chạy ứng dụng để tạo schema và dữ liệu mẫu' AS [Status];
+    N'Database đã sẵn sàng; chạy ứng dụng để tạo schema và dữ liệu mẫu' AS [Status];
 GO

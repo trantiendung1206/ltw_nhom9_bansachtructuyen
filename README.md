@@ -1,6 +1,8 @@
 # GroupNine - Website bán sách
 
 Website bán sách trực tuyến xây dựng bằng ASP.NET Core MVC và SQL Server.
+Tài liệu chi tiết về kiến trúc, quyền truy cập và các luồng chức năng được duy
+trì tại [SYSTEM-DOCUMENTATION.md](./SYSTEM-DOCUMENTATION.md).
 
 ## Yêu cầu môi trường
 
@@ -31,7 +33,7 @@ Nếu máy bạn dùng instance khác, sửa `ConnectionStrings:DefaultConnectio
 `appsettings.json`, ví dụ:
 
 ```json
-"DefaultConnection": "Server=.\\SQLEXPRESS;Database=LatTrangBookStore;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
+"DefaultConnection": "Server=.\\SQLEXPRESS;Database=GroupNine;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
 ```
 
 Tạo database bằng SQL Server Management Studio:
@@ -46,10 +48,25 @@ Hoặc dùng PowerShell với `sqlcmd`:
 sqlcmd -S ".\MSSQLSERVER01" -E -i ".\scripts\init-database.sql"
 ```
 
-Script chỉ tạo database `LatTrangBookStore`. Khi ứng dụng chạy lần đầu,
-`Data/DbInitializer.cs` sẽ tự tạo toàn bộ bảng Identity và bảng nghiệp vụ,
-cập nhật schema, tạo 7 danh mục, thêm sách mẫu, role và tài khoản demo.
-Không cần chạy thêm migration thủ công.
+Script chỉ tạo database `GroupNine`. Khi ứng dụng khởi động,
+`Data/DbInitializer.cs` dùng `EnsureCreated` để tạo schema nếu cần, chạy một số
+câu lệnh SQL bổ sung/cập nhật schema cũ, đồng bộ 7 danh mục, thêm sách mẫu,
+role và tài khoản demo. Đây không phải quy trình EF Core migrations; không cần
+chạy migration thủ công.
+
+Database trên instance mặc định của dự án hiện đã mang tên `GroupNine`. Nếu cài
+đặt khác vẫn có database cũ `LatTrangBookStore` chứa dữ liệu, hãy sao lưu và
+xác nhận chưa có database `GroupNine` trước khi đổi tên. Không chạy script tạo
+database trước khi quyết định cách chuyển dữ liệu, vì script không sao chép
+database cũ. Để giữ nguyên dữ liệu, dừng ứng dụng, kết nối SQL Server vào
+database `master` và chạy:
+
+```sql
+ALTER DATABASE [LatTrangBookStore] MODIFY NAME = [GroupNine];
+```
+
+Sau đó chạy ứng dụng với connection string mặc định. Nếu cả hai database cùng
+tồn tại, chọn đúng database có dữ liệu cần dùng và sao lưu trước mọi thao tác.
 
 ### 2. Chạy website
 
@@ -76,12 +93,16 @@ dotnet restore
 dotnet run
 ```
 
-Ứng dụng vẫn kiểm tra và bổ sung schema/dữ liệu cần thiết khi khởi động.
+Ứng dụng vẫn chạy `DbInitializer` khi khởi động; các cập nhật schema thủ công
+chỉ bao phủ những thay đổi đã được xử lý trong mã nguồn, không thay thế
+migrations cho schema tùy biến.
 
 ## Đã triển khai
 
-- Trang chủ theo nhận diện GroupNine, banner, danh mục và sách mới.
+- Trang chủ theo nhận diện GroupNine, banner, sách đề xuất, sách xếp theo đánh
+  giá và sách đang khuyến mãi.
 - Danh sách sách với tìm kiếm, lọc danh mục và sắp xếp theo giá/đánh giá.
+  Điều hướng “Được đánh giá cao” sắp theo điểm đánh giá.
 - Trang chi tiết sách, giá khuyến mãi, tồn kho và đánh giá sao.
 - Giỏ hàng lưu bằng Session, cập nhật số lượng và xóa sản phẩm.
 - Checkout lưu tên, số điện thoại và địa chỉ; tổng tiền hệ thống chỉ tính tiền sách.
@@ -89,35 +110,42 @@ dotnet run
   giao hàng do khách thanh toán trực tiếp cho shipper và không thuộc hệ thống.
 - Trừ tồn kho sau khi đặt hàng và thông báo mã đơn hàng; trạng thái ban đầu là `Cần xác nhận`.
 - Khách có thể đánh giá từng sách từ 1 đến 5 sao sau khi đơn hoàn tất.
-- Dashboard quản lý mẫu với thống kê và bảng quản lý tồn kho.
+- Dashboard Admin có thống kê tổng quan; tồn kho được quản lý trong trang sách.
 - Responsive mobile, Bootstrap 5 và nhóm font sans-serif phổ biến (Arial/Roboto/Helvetica/Tahoma).
 
 ## Database và tài khoản demo
 
 Ứng dụng hiện dùng SQL Server + Entity Framework Core. Script
-`scripts/init-database.sql` chỉ tạo database rỗng `LatTrangBookStore` trên
-instance `.\\MSSQLSERVER01`; khi chạy lần đầu, `DbInitializer` dùng
-`EnsureCreated` để tạo bảng Identity/nghiệp vụ, cập nhật schema và seed sách,
-role `Admin`/`Customer`.
+`scripts/init-database.sql` chỉ tạo database rỗng `GroupNine` trên
+instance `.\\MSSQLSERVER01`; `DbInitializer` khởi tạo schema bằng
+`EnsureCreated` khi cần, thực hiện một số cập nhật schema có điều kiện và seed
+dữ liệu, role `Admin`/`Customer`. Đây không phải quy trình EF Core migrations.
 
-- Admin: `admin@latrang.vn` / `Admin123!`
-- Customer: `customer@latrang.vn` / `Customer123!`
+- Admin: `admin@groupnine.vn` / `Admin123!`
+- Customer: `customer@groupnine.vn` / `Customer123!`
 - Admin mẫu: `admin1@gmail.com`, `admin2@gmail.com`, `admin3@gmail.com` / `12345678`
 - Khách hàng mẫu: `khachhangmau1@gmail.com`, `khachhangmau2@gmail.com`, `khachhangmau3@gmail.com` / `12345678`
 - Đăng nhập: `/Account/Login`
 - Đăng ký: `/Account/Register`
 - Quản trị sách: `/Admin` (chỉ role Admin truy cập được)
-- Admin có giao diện riêng, không dùng header/footer cửa hàng; gồm thống kê hệ thống (tồn kho, doanh thu, đơn hàng, sách/danh mục bán chạy), CRUD sách, quản lý kho, danh mục, đơn hàng và ưu đãi.
+- Admin có giao diện riêng, không dùng header/footer cửa hàng; gồm thống kê hệ thống (tồn kho, doanh thu, đơn hàng, sách/danh mục bán chạy từ các đơn hoàn tất), CRUD sách, quản lý kho, danh mục, đơn hàng và ưu đãi.
 - Quản lý ưu đãi tại `/Admin/Promotions`: lọc theo tên/mã sách hoặc danh mục, áp dụng giảm theo phần trăm hoặc số tiền trực tiếp, và xóa ưu đãi từng sách.
 - Giỏ hàng và đặt hàng yêu cầu đăng nhập; khách chưa đăng nhập sẽ được chuyển tới `/Account/Login`.
 
-Các bảng Identity và dữ liệu sách được tạo tự động bằng `EnsureCreated`. Connection string nằm trong `appsettings.json`.
+Schema Identity và nghiệp vụ được khởi tạo từ `AppDbContext`/`EnsureCreated`,
+còn dữ liệu mẫu và các cập nhật schema bổ sung do `DbInitializer` thực hiện.
+Connection string mặc định nằm trong `appsettings.json`. Khi ứng dụng khởi động,
+initializer đổi email và tên đăng nhập của hai tài khoản demo cũ từ miền
+`latrang.vn` sang `groupnine.vn`, giữ nguyên ID, vai trò và mật khẩu; nếu email
+mới đã thuộc tài khoản khác, initializer báo lỗi thay vì gộp tài khoản.
+Email liên hệ trong góp ý của khách hàng demo cũng được cập nhật.
 
 ## Xử lý lỗi thường gặp
 
 - **Không kết nối được SQL Server**: kiểm tra dịch vụ SQL Server đang chạy, tên instance
   trong connection string và Windows Account có quyền truy cập database.
-- **Database bị khóa khi build**: dừng tiến trình website cũ rồi chạy lại `dotnet run`.
+- **Ứng dụng không khởi động được sau khi tạo database**: kiểm tra kết nối,
+  quyền trên SQL Server và thông báo lỗi của `DbInitializer` trong terminal.
 - **Cổng 5080 đang được sử dụng**: dùng cổng khác, ví dụ
   `dotnet run --urls http://localhost:5081`.
 - **`sqlcmd` không được nhận diện**: chạy file SQL bằng SQL Server Management Studio

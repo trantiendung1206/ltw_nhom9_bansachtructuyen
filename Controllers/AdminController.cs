@@ -25,11 +25,13 @@ public class AdminController(AppDbContext db) : Controller
             FeaturedBooks = await db.Books.OrderByDescending(book => book.Rating).Take(5).AsNoTracking().ToListAsync()
         };
         stats.BestSellingBook = await db.OrderItems
+            .Where(item => db.Orders.Any(order => order.Id == item.OrderId && order.Status == "Hoàn tất"))
             .GroupBy(item => item.BookTitle)
             .OrderByDescending(group => group.Sum(item => item.Quantity))
             .Select(group => group.Key)
             .FirstOrDefaultAsync() ?? "Chưa có dữ liệu";
         stats.BestSellingCategory = await db.OrderItems
+            .Where(item => db.Orders.Any(order => order.Id == item.OrderId && order.Status == "Hoàn tất"))
             .Join(db.Books, item => item.BookId, book => book.Id, (item, book) => new { book.Category, item.Quantity })
             .GroupBy(item => item.Category)
             .OrderByDescending(group => group.Sum(item => item.Quantity))
