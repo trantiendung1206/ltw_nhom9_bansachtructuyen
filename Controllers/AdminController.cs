@@ -195,6 +195,11 @@ public class AdminController(AppDbContext db) : Controller
     [HttpGet("Orders")]
     public async Task<IActionResult> Orders(string? q, string? status)
     {
+        await db.Orders
+            .Where(order => order.Status != "Đã trả hàng" &&
+                db.ReturnRequests.Any(request => request.OrderId == order.Id && request.Status == "Chấp nhận yêu cầu trả hàng"))
+            .ExecuteUpdateAsync(setters => setters.SetProperty(order => order.Status, "Đã trả hàng"));
+
         var orders = db.Orders.Include(order => order.Items).AsQueryable();
         if (!string.IsNullOrWhiteSpace(status))
             orders = orders.Where(order => order.Status == status);
